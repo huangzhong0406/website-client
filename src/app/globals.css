@@ -16,7 +16,7 @@ body {
   overflow-x: hidden;
 }
 
-body {
+body.renderer-body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
@@ -33,6 +33,51 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.rendered-page {
+  min-height: 100vh;
+}
+
+.rendered-page img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.rendered-page [data-placeholder] {
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.system-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.system-page button,
+.system-page a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, border 0.2s ease;
+}
+
+.system-page button:hover,
+.system-page a:hover {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
