@@ -5,7 +5,7 @@ import { logError } from "../lib/logger";
 const DEFAULT_REVALIDATE_SECONDS = Number(
   process.env.NEXT_PUBLIC_PAGE_REVALIDATE ??
     process.env.PAGE_REVALIDATE ??
-    120
+    24 * 60 * 60
 );
 
 // 根路径对应的默认 slug，可根据项目调整
