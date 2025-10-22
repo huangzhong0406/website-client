@@ -7,7 +7,10 @@ const imageDomains = process.env.NEXT_PUBLIC_IMAGE_DOMAINS
 const nextConfig = {
   poweredByHeader: false,
   compress: true,
+  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
+  trailingSlash: true,
   images: {
+    unoptimized: process.env.NODE_ENV === 'production',
     domains: imageDomains,
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24,
