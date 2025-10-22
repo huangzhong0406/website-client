@@ -15,11 +15,19 @@ export const revalidate = 120;
 
 export async function generateMetadata({params}) {
   try {
-    // console.log("generateMetadata params:", params);
+    const resolvedParams = await params;
+    const slug = resolvedParams.slug ?? [];
+    
+    // 过滤系统路径
+    if (slug.length > 0 && slug[0] === '.well-known') {
+      return { title: '页面未找到' };
+    }
+    
+    // console.log("generateMetadata params:", resolvedParams);
     // 预先获取接口数据，将 meta 字段映射到 Next.js Metadata
-    const page = await getPageData(params.slug ?? '');
-    // const page = await getPageData('');
-    console.log("generateMetadata page:", page);
+    const page = pageData;
+    // const page = await getPageData(slug);
+    // console.log("generateMetadata page:", page);
     const meta = page.meta ?? {};
 
     const robots = page.publishStatus === "published" ? meta.robots : {index: false, follow: false};
@@ -55,11 +63,18 @@ export async function generateMetadata({params}) {
 
 export default async function RenderedPage({params}) {
   let page;
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug ?? [];
+
+  // 过滤系统路径
+  if (slug.length > 0 && slug[0] === '.well-known') {
+    notFound();
+  }
 
   try {
     // 暂时用假数据
-    // page = pageData;
-    page = await getPageData(params.slug ?? '');
+    page = pageData;
+    // page = await getPageData(slug);
     // page = await getPageData('');
   } catch (error) {
     if (error instanceof PageNotFoundError) {
