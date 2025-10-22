@@ -11,9 +11,7 @@ import {pageData} from "@/lib/pageData";
 
 export const dynamicParams = true;
 
-const REVALIDATE_SECONDS = Number(process.env.NEXT_PUBLIC_PAGE_REVALIDATE ?? process.env.PAGE_REVALIDATE ?? 120);
-
-export const revalidate = Number.isFinite(REVALIDATE_SECONDS) && REVALIDATE_SECONDS >= 0 ? REVALIDATE_SECONDS : 120;
+export const revalidate = 120;
 
 export async function generateMetadata({params}) {
   // 暂时没有接口，先用假数据
