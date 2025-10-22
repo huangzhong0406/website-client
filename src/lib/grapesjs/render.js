@@ -12,7 +12,17 @@ export function prepareGrapesContent({
   assets = [],
 } = {}) {
   const assetMap = buildAssetMap(assets);
-  const $ = load(html || "", {
+  
+  // 确保 HTML 处理的一致性
+  if (!html) {
+    return {
+      html: "",
+      criticalCss: "",
+      deferredCss: "",
+    };
+  }
+
+  const $ = load(html, {
     decodeEntities: false,
     normalizeWhitespace: false,
     xmlMode: false,

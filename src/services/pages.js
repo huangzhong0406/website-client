@@ -39,8 +39,11 @@ function toSlugPath(slugSegments) {
 }
 
 export async function fetchPage(slugSegments) {
+  // console.log("fetchPage slugSegments:", slugSegments);
   const slugPath = toSlugPath(slugSegments);
-  const url = buildApiUrl(`/api/pages/${encodeURIComponent(slugPath)}`);
+  console.log("fetchPage slugPath:", slugPath);
+  const url = buildApiUrl(`/v2/aisite/pages/${encodeURIComponent(slugPath)}`);
+  console.log("fetchPage url:", url);
 
   let response;
 
@@ -59,6 +62,8 @@ export async function fetchPage(slugSegments) {
     logError("页面接口请求失败。", { error, slug: slugPath });
     throw new PageServiceError("Failed to reach page API.", { cause: error });
   }
+
+  console.log("fetchPage response status:", response.status);
 
   if (response.status === 404) {
     throw new PageNotFoundError(slugPath);
@@ -87,7 +92,7 @@ export async function fetchPage(slugSegments) {
 
   return {
     slug: slugPath,
-    html: data.html ?? "",
+    html: (data.html ?? "").replace(/<body([^>]*)>/gi, '<div$1>').replace(/<\/body>/gi, '</div>'),
     css: data.css ?? "",
     meta: data.meta ?? {},
     publishStatus: data.publishStatus ?? data.status ?? "draft",

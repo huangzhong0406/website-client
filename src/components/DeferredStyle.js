@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // 在浏览器空闲时注入非关键 CSS，避免阻塞首屏渲染
 export default function DeferredStyle({ css, id }) {
+  const [isClient, setIsClient] = useState(false);
+
   useEffect(() => {
-    if (!css) return undefined;
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!css || !isClient) return undefined;
 
     const style = document.createElement("style");
     if (id) {
@@ -30,7 +36,7 @@ export default function DeferredStyle({ css, id }) {
         style.parentNode.removeChild(style);
       }
     };
-  }, [css, id]);
+  }, [css, id, isClient]);
 
   return null;
 }

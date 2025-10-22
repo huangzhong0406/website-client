@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 // CDN 域名用于在 <head> 中注入预连接，加速静态资源获取
-const cdnOrigin = process.env.NEXT_PUBLIC_CDN_ORIGIN;
+const cdnOrigin = process.env.NEXT_PUBLIC_CDN_ORIGIN || null;
 
 export const metadata = {
   title: {
@@ -45,9 +45,9 @@ export default function RootLayout({ children }) {
       <head>
         {/* 预连接字体与 CDN，加快静态资源建立 TCP/TLS */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {cdnOrigin ? <link rel="preconnect" href={cdnOrigin} /> : null}
+        {cdnOrigin && <link rel="preconnect" href={cdnOrigin} />}
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        {cdnOrigin ? <link rel="dns-prefetch" href={cdnOrigin} /> : null}
+        {cdnOrigin && <link rel="dns-prefetch" href={cdnOrigin} />}
         <meta name="viewport" content="width=device-width,initial-scale=1" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>

@@ -7,18 +7,19 @@ import {logError} from "../../lib/logger";
 import {pageData} from "@/lib/pageData";
 
 // 缓存页面数据，避免同一请求周期内重复访问接口
-// const getPageData = cache(async (slugSegments) => fetchPage(slugSegments));
+const getPageData = cache(async (slugSegments) => fetchPage(slugSegments));
 
 export const dynamicParams = true;
 
 export const revalidate = 120;
 
 export async function generateMetadata({params}) {
-  // 暂时没有接口，先用假数据
-  return pageData;
   try {
+    // console.log("generateMetadata params:", params);
     // 预先获取接口数据，将 meta 字段映射到 Next.js Metadata
-    const page = await getPageData(params.slug ?? []);
+    // const page = await getPageData(params.slug ?? '');
+    const page = await getPageData('');
+    // console.log("generateMetadata page:", page);
     const meta = page.meta ?? {};
 
     const robots = page.publishStatus === "published" ? meta.robots : {index: false, follow: false};
@@ -57,8 +58,9 @@ export default async function RenderedPage({params}) {
 
   try {
     // 暂时用假数据
-    page = pageData;
-    // page = await getPageData(params.slug ?? []);
+    // page = pageData;
+    // page = await getPageData(params.slug ?? '');
+    page = await getPageData('');
   } catch (error) {
     if (error instanceof PageNotFoundError) {
       notFound();
@@ -76,13 +78,13 @@ export default async function RenderedPage({params}) {
   return (
     <>
       {/* 首屏关键 CSS 内联，避免额外请求影响 LCP */}
-      {criticalCss ? <style data-critical="true" dangerouslySetInnerHTML={{__html: criticalCss}} /> : null}
+      {criticalCss && <style data-critical="true" dangerouslySetInnerHTML={{__html: criticalCss}} />}
 
       {/* GrapesJS 导出的 HTML 片段直接插入，保持编辑端排版 */}
       <article className="rendered-page" dangerouslySetInnerHTML={{__html: html}} />
 
       {/* 非关键 CSS 在浏览器空闲时插入，降低首屏阻塞 */}
-      {deferredCss ? <DeferredStyle css={deferredCss} id="page-deferred-css" /> : null}
+      {deferredCss && <DeferredStyle css={deferredCss} id="page-deferred-css" />}
     </>
   );
 }
