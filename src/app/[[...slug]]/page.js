@@ -17,9 +17,9 @@ export async function generateMetadata({params}) {
   try {
     // console.log("generateMetadata params:", params);
     // 预先获取接口数据，将 meta 字段映射到 Next.js Metadata
-    // const page = await getPageData(params.slug ?? '');
-    const page = await getPageData('');
-    // console.log("generateMetadata page:", page);
+    const page = await getPageData(params.slug ?? '');
+    // const page = await getPageData('');
+    console.log("generateMetadata page:", page);
     const meta = page.meta ?? {};
 
     const robots = page.publishStatus === "published" ? meta.robots : {index: false, follow: false};
@@ -59,8 +59,8 @@ export default async function RenderedPage({params}) {
   try {
     // 暂时用假数据
     // page = pageData;
-    // page = await getPageData(params.slug ?? '');
-    page = await getPageData('');
+    page = await getPageData(params.slug ?? '');
+    // page = await getPageData('');
   } catch (error) {
     if (error instanceof PageNotFoundError) {
       notFound();
