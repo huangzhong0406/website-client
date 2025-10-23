@@ -5,7 +5,7 @@ import { logError } from "../lib/logger";
 const DEFAULT_REVALIDATE_SECONDS = Number(
   process.env.NEXT_PUBLIC_PAGE_REVALIDATE ??
     process.env.PAGE_REVALIDATE ??
-    120
+    0
 );
 
 // 根路径对应的默认 slug，可根据项目调整
@@ -41,9 +41,9 @@ function toSlugPath(slugSegments) {
 export async function fetchPage(slugSegments) {
   // console.log("fetchPage slugSegments:", slugSegments);
   const slugPath = toSlugPath(slugSegments);
-  console.log("fetchPage slugPath:", slugPath);
+  console.log("路径:", slugPath);
   const url = buildApiUrl(`/v2/aisite/pages/${encodeURIComponent(slugPath)}`);
-  console.log("fetchPage url:", url);
+  console.log("获取数据的url:", url);
 
   let response;
 
@@ -63,7 +63,7 @@ export async function fetchPage(slugSegments) {
     throw new PageServiceError("Failed to reach page API.", { cause: error });
   }
 
-  console.log("fetchPage response status:", response.status);
+  console.log("接口返回状态 status:", response.status);
 
   if (response.status === 404) {
     throw new PageNotFoundError(slugPath);
@@ -89,6 +89,8 @@ export async function fetchPage(slugSegments) {
   if (!data || typeof data !== "object") {
     throw new PageServiceError("Invalid response from page API.");
   }
+
+  console.log("html数据:", data);
 
   return {
     slug: slugPath,

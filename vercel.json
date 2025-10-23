@@ -7,7 +7,7 @@
     "PAGE_REVALIDATE": "",
     "ROOT_SLUG": "",
     "API_TOKEN": "testapi.token",
-    "NEXT_PUBLIC_PAGE_REVALIDATE": "120",
+    "NEXT_PUBLIC_PAGE_REVALIDATE": "0",
     "NEXT_PUBLIC_ROOT_SLUG": "home",
     "CRITICAL_CSS_LIMIT": "4000",
     "REVALIDATE_SECRET": "change-me",

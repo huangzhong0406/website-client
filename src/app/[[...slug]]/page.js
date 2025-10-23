@@ -1,6 +1,7 @@
 import {cache} from "react";
 import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
+import SwiperRenderer from "../../components/SwiperRenderer";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
 import {prepareGrapesContent} from "../../lib/grapesjs/render";
 import {logError} from "../../lib/logger";
@@ -25,8 +26,8 @@ export async function generateMetadata({params}) {
     
     // console.log("generateMetadata params:", resolvedParams);
     // 预先获取接口数据，将 meta 字段映射到 Next.js Metadata
-    const page = pageData;
-    // const page = await getPageData(slug);
+    // const page = pageData;
+    const page = await getPageData(slug);
     // console.log("generateMetadata page:", page);
     const meta = page.meta ?? {};
 
@@ -73,8 +74,8 @@ export default async function RenderedPage({params}) {
 
   try {
     // 暂时用假数据
-    page = pageData;
-    // page = await getPageData(slug);
+    // page = pageData;
+    page = await getPageData(slug);
     // page = await getPageData('');
   } catch (error) {
     if (error instanceof PageNotFoundError) {
@@ -100,6 +101,9 @@ export default async function RenderedPage({params}) {
 
       {/* 非关键 CSS 在浏览器空闲时插入，降低首屏阻塞 */}
       {deferredCss && <DeferredStyle css={deferredCss} id="page-deferred-css" />}
+      
+      {/* Swiper 初始化 */}
+      <SwiperRenderer />
     </>
   );
 }
