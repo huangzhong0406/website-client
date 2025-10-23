@@ -9,7 +9,6 @@ const nextConfig = {
   compress: true,
 
   images: {
-
     domains: imageDomains,
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24,

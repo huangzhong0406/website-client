@@ -19,6 +19,7 @@ export function prepareGrapesContent({
       html: "",
       criticalCss: "",
       deferredCss: "",
+      hasImages: false,
     };
   }
 
@@ -30,6 +31,10 @@ export function prepareGrapesContent({
 
   // 对 <img> 进行补齐，降低 LCP/CLS 风险
   enhanceImages($, assetMap);
+  
+  // 转换图片标签为 Next.js Image 组件
+  const hasImages = $('img').length > 0;
+  convertImagesToNextImage($);
 
   const normalizedHtml = $.root().html() || "";
   const { criticalCss, deferredCss } = splitCss(css);
@@ -38,6 +43,7 @@ export function prepareGrapesContent({
     html: normalizedHtml,
     criticalCss,
     deferredCss,
+    hasImages,
   };
 }
 
@@ -153,6 +159,26 @@ function applyPictureSources(node, sources) {
   } catch (error) {
     logWarn("包装 picture 标签失败。", { error });
   }
+}
+
+function convertImagesToNextImage($) {
+  $('img').each((index, element) => {
+    const node = $(element);
+    const src = node.attr('src');
+    const alt = node.attr('alt') || '';
+    const width = node.attr('width');
+    const height = node.attr('height');
+    const className = node.attr('class') || '';
+    const style = node.attr('style') || '';
+    const loading = node.attr('loading') || 'lazy';
+    
+    if (!src) return;
+    
+    // 创建 Next.js Image 组件的占位符
+    const imageComponent = `<div data-next-image="true" data-src="${src}" data-alt="${alt}" data-width="${width || 800}" data-height="${height || 600}" data-class="${className}" data-style="${style}" data-loading="${loading}"></div>`;
+    
+    node.replaceWith(imageComponent);
+  });
 }
 
 function splitCss(css) {

@@ -2,6 +2,7 @@ import {cache} from "react";
 import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
 import SwiperRenderer from "../../components/SwiperRenderer";
+import ImageProcessor from "../../components/ImageProcessor";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
 import {prepareGrapesContent} from "../../lib/grapesjs/render";
 import {logError} from "../../lib/logger";
@@ -14,21 +15,21 @@ export const dynamicParams = true;
 
 export const revalidate = 120;
 
+// 获取Meta数据
 export async function generateMetadata({params}) {
   try {
     const resolvedParams = await params;
     const slug = resolvedParams.slug ?? [];
-    
+
     // 过滤系统路径
-    if (slug.length > 0 && slug[0] === '.well-known') {
-      return { title: '页面未找到' };
+    if (slug.length > 0 && slug[0] === ".well-known") {
+      return {title: "页面未找到"};
     }
-    
+
     // console.log("generateMetadata params:", resolvedParams);
     // 预先获取接口数据，将 meta 字段映射到 Next.js Metadata
     // const page = pageData;
     const page = await getPageData(slug);
-    // console.log("generateMetadata page:", page);
     const meta = page.meta ?? {};
 
     const robots = page.publishStatus === "published" ? meta.robots : {index: false, follow: false};
@@ -68,7 +69,7 @@ export default async function RenderedPage({params}) {
   const slug = resolvedParams.slug ?? [];
 
   // 过滤系统路径
-  if (slug.length > 0 && slug[0] === '.well-known') {
+  if (slug.length > 0 && slug[0] === ".well-known") {
     notFound();
   }
 
@@ -76,7 +77,6 @@ export default async function RenderedPage({params}) {
     // 暂时用假数据
     // page = pageData;
     page = await getPageData(slug);
-    // page = await getPageData('');
   } catch (error) {
     if (error instanceof PageNotFoundError) {
       notFound();
@@ -89,7 +89,7 @@ export default async function RenderedPage({params}) {
     throw error;
   }
 
-  const {html, criticalCss, deferredCss} = prepareGrapesContent(page);
+  const {html, criticalCss, deferredCss, hasImages} = prepareGrapesContent(page);
 
   return (
     <>
@@ -101,9 +101,12 @@ export default async function RenderedPage({params}) {
 
       {/* 非关键 CSS 在浏览器空闲时插入，降低首屏阻塞 */}
       {deferredCss && <DeferredStyle css={deferredCss} id="page-deferred-css" />}
-      
+
       {/* Swiper 初始化 */}
       <SwiperRenderer />
+      
+      {/* 图片处理器 */}
+      {hasImages && <ImageProcessor />}
     </>
   );
 }
