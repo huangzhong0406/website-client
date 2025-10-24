@@ -10,9 +10,10 @@ export function prepareGrapesContent({
   html = "",
   css = "",
   assets = [],
+  productData = null, // 新增：产品数据
 } = {}) {
   const assetMap = buildAssetMap(assets);
-  
+
   // 确保 HTML 处理的一致性
   if (!html) {
     return {
@@ -29,9 +30,14 @@ export function prepareGrapesContent({
     xmlMode: false,
   });
 
+  // 处理产品列表组件
+  if (productData) {
+    processProductListComponents($, productData);
+  }
+
   // 对 <img> 进行补齐，降低 LCP/CLS 风险
   enhanceImages($, assetMap);
-  
+
   // 转换图片标签为 Next.js Image 组件
   const hasImages = $('img').length > 0;
   convertImagesToNextImage($);
@@ -57,6 +63,85 @@ function buildAssetMap(assets) {
       ])
       .filter(([key]) => Boolean(key))
   );
+}
+
+/**
+ * 处理产品列表组件
+ * 复用编辑器保存的HTML结构，只替换动态数据
+ */
+function processProductListComponents($, products) {
+  if (!Array.isArray(products) || products.length === 0) {
+    return;
+  }
+
+  // 查找所有产品列表组件
+  $('[data-component-type="product-list"]').each((index, element) => {
+    const $elem = $(element);
+
+    // 获取组件配置
+    const maxProducts = parseInt($elem.attr('data-max-products')) || 12;
+    const displayProducts = products;
+
+    // 移除编辑器标识（如果存在）
+    $elem.find('.editor-badge').remove();
+
+    // 查找产品列表容器
+    const $productList = $elem.find('.product-list');
+
+    if ($productList.length === 0) {
+      logWarn('产品列表容器 .product-list 未找到');
+      return;
+    }
+
+    // 查找第一个产品项作为模板
+    const $templateItem = $productList.find('.product-item').first();
+
+    if ($templateItem.length === 0) {
+      logWarn('产品项模板 .product-item 未找到');
+      return;
+    }
+
+    // 克隆模板结构
+    const templateHTML = $.html($templateItem);
+
+    // 清空产品列表
+    $productList.empty();
+
+    // 根据真实产品数据生成产品项
+    displayProducts.forEach((product) => {
+      const $productItem = $(templateHTML);
+
+      // 替换产品图片
+      const $img = $productItem.find('.product-image img, img');
+      if ($img.length > 0) {
+        $img.attr('src', product.image || 'https://via.placeholder.com/300');
+        $img.attr('alt', product.name || '');
+        // 添加标记，防止被转换为Next.js Image占位符
+        $img.attr('data-skip-next-image', 'true');
+      }
+
+      // 替换产品名称
+      const $name = $productItem.find('.product-name, h3');
+      if ($name.length > 0) {
+        $name.text(product.name || '');
+      }
+
+      // 替换产品价格
+      const $price = $productItem.find('.product-price');
+      if ($price.length > 0) {
+        $price.text(product.price || '');
+      }
+
+      // 替换产品描述
+      const $description = $productItem.find('.product-description');
+      if ($description.length > 0) {
+        $description.text(product.description || '');
+      }
+
+      // 添加到产品列表
+      $productList.append($productItem);
+    });
+  });
 }
 
 function enhanceImages($, assetMap) {
@@ -164,6 +249,12 @@ function applyPictureSources(node, sources) {
 function convertImagesToNextImage($) {
   $('img').each((index, element) => {
     const node = $(element);
+
+    // 跳过产品列表等动态组件的图片
+    if (node.attr('data-skip-next-image') === 'true') {
+      return;
+    }
+
     const src = node.attr('src');
     const alt = node.attr('alt') || '';
     const width = node.attr('width');
@@ -171,12 +262,12 @@ function convertImagesToNextImage($) {
     const className = node.attr('class') || '';
     const style = node.attr('style') || '';
     const loading = node.attr('loading') || 'lazy';
-    
+
     if (!src) return;
-    
+
     // 创建 Next.js Image 组件的占位符
     const imageComponent = `<div data-next-image="true" data-src="${src}" data-alt="${alt}" data-width="${width || 800}" data-height="${height || 600}" data-class="${className}" data-style="${style}" data-loading="${loading}"></div>`;
-    
+
     node.replaceWith(imageComponent);
   });
 }

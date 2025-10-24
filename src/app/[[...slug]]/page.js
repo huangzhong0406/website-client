@@ -4,12 +4,16 @@ import DeferredStyle from "../../components/DeferredStyle";
 import SwiperRenderer from "../../components/SwiperRenderer";
 import ImageProcessor from "../../components/ImageProcessor";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
+import {fetchProducts, ProductServiceError} from "../../services/products";
 import {prepareGrapesContent} from "../../lib/grapesjs/render";
 import {logError} from "../../lib/logger";
 import {pageData} from "@/lib/pageData";
 
 // 缓存页面数据，避免同一请求周期内重复访问接口
 const getPageData = cache(async (slugSegments) => fetchPage(slugSegments));
+
+// 缓存产品数据
+const getProductData = cache(async () => fetchProducts());
 
 export const dynamicParams = true;
 
@@ -65,6 +69,7 @@ export async function generateMetadata({params}) {
 
 export default async function RenderedPage({params}) {
   let page;
+  let products = null;
   const resolvedParams = await params;
   const slug = resolvedParams.slug ?? [];
 
@@ -89,7 +94,25 @@ export default async function RenderedPage({params}) {
     throw error;
   }
 
-  const {html, criticalCss, deferredCss, hasImages} = prepareGrapesContent(page);
+  // 检查页面是否包含产品列表组件
+  const hasProductList = page.html?.includes('data-component-type="product-list"');
+
+  // 如果页面包含产品列表组件，则获取产品数据
+  if (hasProductList) {
+    try {
+      products = await getProductData();
+    } catch (error) {
+      if (error instanceof ProductServiceError) {
+        logError("产品服务发生错误。", {error});
+      }
+      // 产品数据加载失败不影响页面渲染，继续处理
+    }
+  }
+
+  const {html, criticalCss, deferredCss, hasImages} = prepareGrapesContent({
+    ...page,
+    productData: products,
+  });
 
   return (
     <>
@@ -104,7 +127,7 @@ export default async function RenderedPage({params}) {
 
       {/* Swiper 初始化 */}
       <SwiperRenderer />
-      
+
       {/* 图片处理器 */}
       {hasImages && <ImageProcessor />}
     </>
