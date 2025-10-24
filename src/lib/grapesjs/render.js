@@ -38,9 +38,15 @@ export function prepareGrapesContent({
   // 对 <img> 进行补齐，降低 LCP/CLS 风险
   enhanceImages($, assetMap);
 
-  // 转换图片标签为 Next.js Image 组件
-  const hasImages = $('img').length > 0;
-  convertImagesToNextImage($);
+  // 注意：暂时禁用 Next.js Image 转换，使用原生 <img> 标签
+  // 原因：
+  // 1. GrapesJS 用户已经在编辑器中设置好图片
+  // 2. 图片可能来自各种 CDN，已经优化过
+  // 3. 客户端 React 渲染增加延迟，影响体验
+  // 4. 对于动态内容（产品列表），缓存效果差
+  // 如果未来需要启用，取消下面的注释：
+  // const hasImages = $('img').length > 0;
+  // convertImagesToNextImage($);
 
   const normalizedHtml = $.root().html() || "";
   const { criticalCss, deferredCss } = splitCss(css);
@@ -49,7 +55,7 @@ export function prepareGrapesContent({
     html: normalizedHtml,
     criticalCss,
     deferredCss,
-    hasImages,
+    hasImages: false, // 禁用 ImageProcessor 组件
   };
 }
 
@@ -116,8 +122,6 @@ function processProductListComponents($, products) {
       if ($img.length > 0) {
         $img.attr('src', product.image || 'https://via.placeholder.com/300');
         $img.attr('alt', product.name || '');
-        // 添加标记，防止被转换为Next.js Image占位符
-        $img.attr('data-skip-next-image', 'true');
       }
 
       // 替换产品名称
@@ -246,31 +250,28 @@ function applyPictureSources(node, sources) {
   }
 }
 
-function convertImagesToNextImage($) {
-  $('img').each((index, element) => {
-    const node = $(element);
-
-    // 跳过产品列表等动态组件的图片
-    if (node.attr('data-skip-next-image') === 'true') {
-      return;
-    }
-
-    const src = node.attr('src');
-    const alt = node.attr('alt') || '';
-    const width = node.attr('width');
-    const height = node.attr('height');
-    const className = node.attr('class') || '';
-    const style = node.attr('style') || '';
-    const loading = node.attr('loading') || 'lazy';
-
-    if (!src) return;
-
-    // 创建 Next.js Image 组件的占位符
-    const imageComponent = `<div data-next-image="true" data-src="${src}" data-alt="${alt}" data-width="${width || 800}" data-height="${height || 600}" data-class="${className}" data-style="${style}" data-loading="${loading}"></div>`;
-
-    node.replaceWith(imageComponent);
-  });
-}
+// 注释：此函数已停用，改为使用原生 <img> 标签
+// 如果未来需要启用 Next.js Image 优化，可以取消注释
+// function convertImagesToNextImage($) {
+//   $('img').each((index, element) => {
+//     const node = $(element);
+//
+//     const src = node.attr('src');
+//     const alt = node.attr('alt') || '';
+//     const width = node.attr('width');
+//     const height = node.attr('height');
+//     const className = node.attr('class') || '';
+//     const style = node.attr('style') || '';
+//     const loading = node.attr('loading') || 'lazy';
+//
+//     if (!src) return;
+//
+//     // 创建 Next.js Image 组件的占位符
+//     const imageComponent = `<div data-next-image="true" data-src="${src}" data-alt="${alt}" data-width="${width || 800}" data-height="${height || 600}" data-class="${className}" data-style="${style}" data-loading="${loading}"></div>`;
+//
+//     node.replaceWith(imageComponent);
+//   });
+// }
 
 function splitCss(css) {
   if (!css) {
