@@ -1,6 +1,5 @@
 import { load } from "cheerio";
 import { logWarn } from "../logger";
-import { sanitizeHtml, sanitizeCss } from "../htmlSanitizer";
 
 // 关键 CSS 截断长度,超出部分将延迟注入
 const DEFAULT_CRITICAL_CSS_LIMIT = Number(
