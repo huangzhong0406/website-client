@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import PerformanceMonitor from "../components/PerformanceMonitor";
+import SimplePerf from "../components/SimplePerf";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,7 +58,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
-        {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
+        {process.env.NODE_ENV === 'development' && <SimplePerf />}
       </body>
     </html>
   );

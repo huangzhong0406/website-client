@@ -18,8 +18,7 @@ export class ProductServiceError extends Error {
  * 获取产品列表数据
  */
 export async function fetchProducts() {
-  const url = buildApiUrl("/v2/aisite/products");
-
+  // 直接返回假数据，避免无效API调用
   return [
     {
       id: 1,
@@ -65,10 +64,15 @@ export async function fetchProducts() {
     },
   ];
 
+  
+  // 注释掉的真实API调用代码
+  /*
+  const url = buildApiUrl("/v2/aisite/products");
   let response;
 
   try {
     response = await apiFetch(url, {
+      timeout: 3000,
       next: {
         revalidate: Number.isFinite(DEFAULT_REVALIDATE_SECONDS) && DEFAULT_REVALIDATE_SECONDS > 0 ? DEFAULT_REVALIDATE_SECONDS : 0,
         tags: ["products"],
@@ -81,12 +85,10 @@ export async function fetchProducts() {
 
   if (!response.ok) {
     const payload = await safeReadJson(response);
-
     logError("产品接口返回异常响应。", {
       status: response.status,
       payload,
     });
-
     throw new ProductServiceError("Product API responded with an error.", {
       status: response.status,
       payload,
@@ -94,19 +96,16 @@ export async function fetchProducts() {
   }
 
   const data = await safeReadJson(response);
-
   if (!data) {
     throw new ProductServiceError("Invalid response from product API.");
   }
 
-  // 适配不同的API响应格式
   const products = data.products || data;
-
   if (!Array.isArray(products)) {
     throw new ProductServiceError("Product API did not return an array.");
   }
-
   return products;
+  */
 }
 
 async function safeReadJson(response) {

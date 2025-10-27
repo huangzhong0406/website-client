@@ -10,14 +10,19 @@ import { apiFetch, buildApiUrl } from './http.js';
  * @returns {Promise<Array>} 页面列表数组
  */
 export async function fetchNavigationPages() {
-      return [
-      { slug: 'home', title: '首页', path: '/', order: 0, showInNav: true },
-      { slug: 'aboutus', title: '关于我们', path: '/aboutus', order: 1, showInNav: true },
-    ];
+  // 直接返回假数据，避免无效API调用
+  return [
+    { slug: 'home', title: '首页', path: '/', order: 0, showInNav: true },
+    { slug: 'aboutus', title: '关于我们', path: '/aboutus', order: 1, showInNav: true },
+  ];
+  
+  // 注释掉的真实API调用代码
+  /*
   try {
     const url = buildApiUrl('/v2/aisite/pages');
 
     const response = await apiFetch(url, {
+      timeout: 3000,
       next: {
         revalidate: 300, // 5分钟缓存
         tags: ['navigation', 'pages']
@@ -65,6 +70,7 @@ export async function fetchNavigationPages() {
       { slug: 'home', title: '首页', path: '/', order: 0, showInNav: true },
     ];
   }
+  */
 }
 
 /**

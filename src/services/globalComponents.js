@@ -58,13 +58,19 @@ export async function fetchAllGlobalComponents() {
     const url = buildApiUrl('/v2/aisite/global-components');
 
     const response = await apiFetch(url, {
+      timeout: 3000,
       next: {
         revalidate: 300,
         tags: ['global-components']
       }
     });
 
-    return response || {};
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data || {};
   } catch (error) {
     console.error('Failed to fetch global components:', error);
     return {};
