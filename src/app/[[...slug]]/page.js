@@ -132,7 +132,7 @@ export default async function RenderedPage({params}) {
     }
   }
 
-  const {html, criticalCss, deferredCss} = prepareGrapesContent({
+  const {html, criticalCss, deferredCss, preloadResources} = prepareGrapesContent({
     ...page,
     productData: products,
     navigationData: finalNavigation,
@@ -142,6 +142,18 @@ export default async function RenderedPage({params}) {
 
   return (
     <>
+      {/* 预加载关键资源 */}
+      {preloadResources.map((resource, index) => (
+        <link
+          key={index}
+          rel="preload"
+          href={resource.href}
+          as={resource.as}
+          type={resource.type}
+          fetchPriority={resource.fetchPriority}
+        />
+      ))}
+
       {/* 首屏关键 CSS 内联，避免额外请求影响 LCP */}
       {criticalCss && <style data-critical="true" dangerouslySetInnerHTML={{__html: criticalCss}} />}
 

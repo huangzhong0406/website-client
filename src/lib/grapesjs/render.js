@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 import { logWarn } from "../logger";
+import { sanitizeHtml, sanitizeCss } from "../htmlSanitizer";
 
 // 关键 CSS 截断长度,超出部分将延迟注入
 const DEFAULT_CRITICAL_CSS_LIMIT = Number(
@@ -14,6 +15,7 @@ export function prepareGrapesContent({
   navigationData = null,
   currentSlug = "",
   globalComponents = null,
+  skipSanitization = false, // 是否跳过HTML清理(仅用于可信来源)
 } = {}) {
   // 早期返回空内容
   if (!html) {
@@ -21,6 +23,7 @@ export function prepareGrapesContent({
       html: "",
       criticalCss: "",
       deferredCss: "",
+      preloadResources: [],
     };
   }
 
@@ -34,6 +37,7 @@ export function prepareGrapesContent({
       html,
       criticalCss,
       deferredCss,
+      preloadResources: ['https://shopsource.singoo.cc/sections/images/800_600.jpg'],
     };
   }
 
@@ -47,6 +51,9 @@ export function prepareGrapesContent({
   // 构建资源映射表(如果有资源)
   const assetMap = assets.length > 0 ? buildAssetMap(assets) : null;
 
+  // 收集需要预加载的资源
+  const preloadResources = [];
+
   // 单次遍历处理所有动态内容
   processDynamicContent($, {
     globalComponents,
@@ -54,6 +61,7 @@ export function prepareGrapesContent({
     navigationData,
     currentSlug,
     assetMap,
+    preloadResources,
   });
 
   const normalizedHtml = $.root().html() || "";
@@ -63,6 +71,7 @@ export function prepareGrapesContent({
     html: normalizedHtml,
     criticalCss,
     deferredCss,
+    preloadResources,
   };
 }
 
@@ -82,7 +91,7 @@ function buildAssetMap(assets) {
  * 单次遍历处理所有动态内容
  * 优化策略:先注入全局组件,然后单次遍历处理所有需要的元素
  */
-function processDynamicContent($, { globalComponents, productData, navigationData, currentSlug, assetMap }) {
+function processDynamicContent($, { globalComponents, productData, navigationData, currentSlug, assetMap, preloadResources }) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
     injectGlobalComponents($, globalComponents);
@@ -106,11 +115,28 @@ function processDynamicContent($, { globalComponents, productData, navigationDat
       processGlobalNavigationComponent($, $elem, navigationData, currentSlug);
     }
 
-    // 处理图片优化
-    else if (assetMap && element.tagName === 'img') {
-      const shouldPrioritize = enhanceImage($, $elem, assetMap, lcpAssigned);
-      if (shouldPrioritize) {
+    // 处理图片优化并收集预加载资源
+    else if (element.tagName === 'img') {
+      const src = $elem.attr('src');
+      const shouldPrioritize = assetMap
+        ? enhanceImage($, $elem, assetMap, lcpAssigned)
+        : !lcpAssigned && isHeroCandidate($elem);
+
+      if (shouldPrioritize && src) {
+        // 添加到预加载资源列表
+        preloadResources.push({
+          href: src,
+          as: 'image',
+          type: getImageType(src),
+          fetchPriority: 'high',
+        });
         lcpAssigned = true;
+
+        // 如果没有assetMap,手动设置属性
+        if (!assetMap) {
+          $elem.attr('loading', 'eager');
+          $elem.attr('fetchpriority', 'high');
+        }
       }
     }
   });
@@ -430,4 +456,24 @@ function splitCss(css) {
   const deferredCss = css.slice(limit);
 
   return { criticalCss, deferredCss };
+}
+
+/**
+ * 根据图片URL获取MIME类型
+ */
+function getImageType(src) {
+  if (!src) return 'image/jpeg';
+
+  const ext = src.split('.').pop()?.toLowerCase().split('?')[0];
+  const typeMap = {
+    'avif': 'image/avif',
+    'webp': 'image/webp',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'svg': 'image/svg+xml',
+  };
+
+  return typeMap[ext] || 'image/jpeg';
 }
