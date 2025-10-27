@@ -12,5 +12,13 @@
     "CRITICAL_CSS_LIMIT": "4000",
     "REVALIDATE_SECRET": "change-me",
     "NEXT_PUBLIC_IMAGE_DOMAINS": "shopsource.singoo.cc"
+  },
+  "functions": {
+    "src/app/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "isr": {
+    "expiration": 3600
   }
 }
