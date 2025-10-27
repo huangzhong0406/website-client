@@ -15,10 +15,8 @@
   },
   "functions": {
     "src/app/**/*.js": {
+      "memory": 3009,
       "maxDuration": 30
     }
-  },
-  "isr": {
-    "expiration": 3600
   }
 }
