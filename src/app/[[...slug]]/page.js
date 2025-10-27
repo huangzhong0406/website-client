@@ -5,6 +5,8 @@ import SwiperRenderer from "../../components/SwiperRenderer";
 import ImageProcessor from "../../components/ImageProcessor";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
 import {fetchProducts, ProductServiceError} from "../../services/products";
+import {fetchNavigationPages} from "../../services/navigation";
+import {fetchAllGlobalComponents} from "../../services/globalComponents";
 import {prepareGrapesContent} from "../../lib/grapesjs/render";
 import {logError} from "../../lib/logger";
 import {pageData} from "@/lib/pageData";
@@ -15,9 +17,15 @@ const getPageData = cache(async (slugSegments) => fetchPage(slugSegments));
 // 缓存产品数据
 const getProductData = cache(async () => fetchProducts());
 
+// 缓存导航数据
+const getNavigationData = cache(async () => fetchNavigationPages());
+
+// 缓存全局组件数据
+const getGlobalComponents = cache(async () => fetchAllGlobalComponents());
+
 export const dynamicParams = true;
 
-export const revalidate = 120;
+export const revalidate = 3600;
 
 // 获取Meta数据
 export async function generateMetadata({params}) {
@@ -68,8 +76,6 @@ export async function generateMetadata({params}) {
 }
 
 export default async function RenderedPage({params}) {
-  let page;
-  let products = null;
   const resolvedParams = await params;
   const slug = resolvedParams.slug ?? [];
 
@@ -78,40 +84,62 @@ export default async function RenderedPage({params}) {
     notFound();
   }
 
+  let page;
   try {
-    // 暂时用假数据
-    // page = pageData;
     page = await getPageData(slug);
   } catch (error) {
     if (error instanceof PageNotFoundError) {
       notFound();
     }
-
     if (error instanceof PageServiceError) {
       logError("页面服务发生错误。", {error});
     }
-
     throw error;
   }
 
-  // 检查页面是否包含产品列表组件
+  // 检查需要哪些额外数据
   const hasProductList = page.html?.includes('data-component-type="product-list"');
+  const hasGlobalNav = page.html?.includes('data-component-type="global-navigation"');
 
-  // 如果页面包含产品列表组件，则获取产品数据
-  if (hasProductList) {
+  // 并行获取所有需要的数据
+  const [globalComponentsResult, productsResult, navigationResult] = await Promise.allSettled([
+    getGlobalComponents(),
+    hasProductList ? getProductData() : Promise.resolve(null),
+    hasGlobalNav ? getNavigationData() : Promise.resolve(null)
+  ]);
+
+  // 处理结果，失败不影响页面渲染
+  const globalComponents = globalComponentsResult.status === 'fulfilled' ? globalComponentsResult.value : null;
+  const products = productsResult.status === 'fulfilled' ? productsResult.value : null;
+  const navigation = navigationResult.status === 'fulfilled' ? navigationResult.value : null;
+
+  // 记录错误但不中断渲染
+  if (globalComponentsResult.status === 'rejected') {
+    logError("全局组件服务发生错误。", {error: globalComponentsResult.reason});
+  }
+  if (productsResult.status === 'rejected') {
+    logError("产品服务发生错误。", {error: productsResult.reason});
+  }
+  if (navigationResult.status === 'rejected') {
+    logError("导航服务发生错误。", {error: navigationResult.reason});
+  }
+
+  // 检查全局组件中是否也需要导航数据
+  let finalNavigation = navigation;
+  if (!finalNavigation && globalComponents?.navigation) {
     try {
-      products = await getProductData();
+      finalNavigation = await getNavigationData();
     } catch (error) {
-      if (error instanceof ProductServiceError) {
-        logError("产品服务发生错误。", {error});
-      }
-      // 产品数据加载失败不影响页面渲染，继续处理
+      logError("导航服务发生错误。", {error});
     }
   }
 
   const {html, criticalCss, deferredCss, hasImages} = prepareGrapesContent({
     ...page,
     productData: products,
+    navigationData: finalNavigation,
+    currentSlug: page.slug,
+    globalComponents: globalComponents,
   });
 
   return (

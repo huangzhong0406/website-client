@@ -10,11 +10,12 @@ export function prepareGrapesContent({
   html = "",
   css = "",
   assets = [],
-  productData = null, // 新增：产品数据
+  productData = null,
+  navigationData = null,
+  currentSlug = "",
+  globalComponents = null,
 } = {}) {
-  const assetMap = buildAssetMap(assets);
-
-  // 确保 HTML 处理的一致性
+  // 早期返回空内容
   if (!html) {
     return {
       html: "",
@@ -24,19 +25,40 @@ export function prepareGrapesContent({
     };
   }
 
+  // 检查是否需要处理动态内容
+  const needsProcessing = productData || navigationData || globalComponents || assets.length > 0;
+  
+  if (!needsProcessing) {
+    // 无需处理，直接返回
+    const { criticalCss, deferredCss } = splitCss(css);
+    return {
+      html,
+      criticalCss,
+      deferredCss,
+      hasImages: false,
+    };
+  }
+
+  const assetMap = buildAssetMap(assets);
   const $ = load(html, {
     decodeEntities: false,
     normalizeWhitespace: false,
     xmlMode: false,
   });
 
-  // 处理产品列表组件
+  // 只在需要时执行处理
+  if (globalComponents) {
+    injectGlobalComponents($, globalComponents);
+  }
   if (productData) {
     processProductListComponents($, productData);
   }
-
-  // 对 <img> 进行补齐，降低 LCP/CLS 风险
-  enhanceImages($, assetMap);
+  if (navigationData) {
+    processGlobalNavigation($, navigationData, currentSlug);
+  }
+  if (assets.length > 0) {
+    enhanceImages($, assetMap);
+  }
 
   // 注意：暂时禁用 Next.js Image 转换，使用原生 <img> 标签
   // 原因：
@@ -145,6 +167,145 @@ function processProductListComponents($, products) {
       // 添加到产品列表
       $productList.append($productItem);
     });
+  });
+}
+
+/**
+ * 注入全局组件到页面
+ * 如果页面中不存在全局组件，则自动注入
+ */
+function injectGlobalComponents($, globalComponents) {
+  if (!globalComponents || typeof globalComponents !== 'object') {
+    return;
+  }
+
+  const body = $('body');
+  if (body.length === 0) {
+    // 如果没有 body，尝试在根节点注入
+    const root = $.root();
+
+    // 注入全局导航（如果存在且页面中不存在）
+    if (globalComponents.navigation) {
+      const hasNavigation = $('[data-component-type="global-navigation"]').length > 0;
+      if (!hasNavigation) {
+        root.prepend(globalComponents.navigation);
+        logWarn('已自动注入全局导航组件');
+      }
+    }
+
+    // 注入全局页脚（如果存在且页面中不存在）
+    if (globalComponents.footer) {
+      const hasFooter = $('[data-component-type="global-footer"]').length > 0;
+      if (!hasFooter) {
+        root.append(globalComponents.footer);
+        logWarn('已自动注入全局页脚组件');
+      }
+    }
+  } else {
+    // 注入全局导航到 body 开头（如果存在且页面中不存在）
+    if (globalComponents.navigation) {
+      const hasNavigation = $('[data-component-type="global-navigation"]').length > 0;
+      if (!hasNavigation) {
+        body.prepend(globalComponents.navigation);
+        logWarn('已自动注入全局导航组件');
+      }
+    }
+
+    // 注入全局页脚到 body 末尾（如果存在且页面中不存在）
+    if (globalComponents.footer) {
+      const hasFooter = $('[data-component-type="global-footer"]').length > 0;
+      if (!hasFooter) {
+        body.append(globalComponents.footer);
+        logWarn('已自动注入全局页脚组件');
+      }
+    }
+  }
+}
+
+/**
+ * 处理全局导航组件
+ * 复用编辑器保存的HTML结构，动态替换菜单项
+ */
+function processGlobalNavigation($, navigationPages, currentSlug = '') {
+  if (!Array.isArray(navigationPages) || navigationPages.length === 0) {
+    return;
+  }
+
+  // 查找所有全局导航组件
+  $('[data-component-type="global-navigation"]').each((index, element) => {
+    const $nav = $(element);
+
+    // 获取配置
+    const showLogo = $nav.attr('data-show-logo') !== 'false';
+    const theme = $nav.attr('data-theme') || 'light';
+    const navStyle = $nav.attr('data-nav-style') || 'horizontal';
+
+    // 查找菜单容器
+    const $menu = $nav.find('.nav-menu');
+    if ($menu.length === 0) {
+      logWarn('导航菜单容器 .nav-menu 未找到');
+      return;
+    }
+
+    // 获取第一个菜单项作为模板（如果存在）
+    const $templateItem = $menu.find('.nav-item, li').first();
+    let templateHTML = '';
+
+    if ($templateItem.length > 0) {
+      templateHTML = $.html($templateItem);
+    } else {
+      // 如果没有模板，使用默认模板
+      templateHTML = '<li class="nav-item"><a href="#">链接</a></li>';
+    }
+
+    // 清空现有菜单
+    $menu.empty();
+
+    // 根据导航数据生成菜单项
+    navigationPages.forEach((page) => {
+      const $menuItem = $(templateHTML);
+
+      // 查找链接元素
+      const $link = $menuItem.find('a').length > 0
+        ? $menuItem.find('a')
+        : $menuItem.is('a')
+        ? $menuItem
+        : null;
+
+      if ($link) {
+        // 设置链接属性
+        $link.attr('href', page.path);
+        $link.text(page.title);
+
+        // 标记当前激活的页面
+        const isActive =
+          currentSlug === page.slug ||
+          (currentSlug === '' && page.slug === 'home') ||
+          (currentSlug === 'home' && page.slug === 'home');
+
+        if (isActive) {
+          $link.addClass('active');
+          $menuItem.addClass('active');
+        }
+      }
+
+      $menu.append($menuItem);
+    });
+
+    // 处理 Logo 显示
+    if (!showLogo) {
+      $nav.find('.nav-brand').css('display', 'none');
+    }
+
+    // 应用主题
+    if (theme === 'dark') {
+      $nav.attr('data-theme', 'dark');
+    }
+
+    // 应用导航样式
+    if (navStyle === 'vertical') {
+      $nav.attr('data-nav-style', 'vertical');
+    }
   });
 }
 

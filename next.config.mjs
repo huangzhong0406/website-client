@@ -7,6 +7,11 @@ const imageDomains = process.env.NEXT_PUBLIC_IMAGE_DOMAINS
 const nextConfig = {
   poweredByHeader: false,
   compress: true,
+  swcMinify: true,
+  
+  experimental: {
+    serverComponentsExternalPackages: ['cheerio'],
+  },
 
   images: {
     domains: imageDomains,

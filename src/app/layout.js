@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import PerformanceMonitor from "../components/PerformanceMonitor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,6 @@ export const metadata = {
   metadataBase: process.env.NEXT_PUBLIC_SITE_URL
     ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
     : undefined,
-  themeColor: "#ffffff",
   openGraph: {
     type: "website",
     title: "GrapesJS 渲染端",
@@ -37,6 +37,12 @@ export const metadata = {
     index: true,
     follow: true,
   },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({ children }) {
@@ -52,6 +58,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
+        {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
       </body>
     </html>
   );

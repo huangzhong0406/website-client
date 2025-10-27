@@ -38,15 +38,28 @@ export function buildApiUrl(pathname, searchParams) {
 
 // 封装 fetch，默认携带 JSON Accept 与鉴权信息
 export async function apiFetch(input, init = {}) {
+  const timeout = init.timeout || 8000; // 默认8秒超时
+  const controller = new AbortController();
+  
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
   const finalInit = {
     headers: {
       Accept: "application/json",
       ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
       ...init.headers,
     },
+    signal: controller.signal,
     ...init,
   };
 
-  return fetch(input, finalInit);
+  try {
+    const response = await fetch(input, finalInit);
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 

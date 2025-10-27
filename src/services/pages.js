@@ -49,6 +49,7 @@ export async function fetchPage(slugSegments) {
 
   try {
     response = await apiFetch(url, {
+      timeout: 5000, // 5秒超时
       next: {
         revalidate:
           Number.isFinite(DEFAULT_REVALIDATE_SECONDS) &&
