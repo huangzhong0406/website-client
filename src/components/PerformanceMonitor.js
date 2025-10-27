@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 export default function PerformanceMonitor() {
   useEffect(() => {
     if (typeof window === 'undefined' || !window.performance) return;
+    // 仅在开发环境下记录性能指标
+    if (process.env.NODE_ENV !== 'development') return;
 
     const observer = new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => {
@@ -18,11 +20,11 @@ export default function PerformanceMonitor() {
             总时间: entry.loadEventEnd - entry.navigationStart
           });
         }
-        
+
         if (entry.entryType === 'largest-contentful-paint') {
           console.log('LCP:', entry.startTime + 'ms');
         }
-        
+
         if (entry.entryType === 'first-input') {
           console.log('FID:', entry.processingStart - entry.startTime + 'ms');
         }

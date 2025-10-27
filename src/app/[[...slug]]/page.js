@@ -2,14 +2,12 @@ import {cache} from "react";
 import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
 import SwiperRenderer from "../../components/SwiperRenderer";
-import ImageProcessor from "../../components/ImageProcessor";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
-import {fetchProducts, ProductServiceError} from "../../services/products";
+import {fetchProducts} from "../../services/products";
 import {fetchNavigationPages} from "../../services/navigation";
 import {fetchAllGlobalComponents} from "../../services/globalComponents";
 import {prepareGrapesContent} from "../../lib/grapesjs/render";
 import {logError} from "../../lib/logger";
-import {pageData} from "@/lib/pageData";
 
 // 缓存页面数据，避免同一请求周期内重复访问接口
 const getPageData = cache(async (slugSegments) => fetchPage(slugSegments));
@@ -134,7 +132,7 @@ export default async function RenderedPage({params}) {
     }
   }
 
-  const {html, criticalCss, deferredCss, hasImages} = prepareGrapesContent({
+  const {html, criticalCss, deferredCss} = prepareGrapesContent({
     ...page,
     productData: products,
     navigationData: finalNavigation,
@@ -155,9 +153,6 @@ export default async function RenderedPage({params}) {
 
       {/* Swiper 初始化 */}
       <SwiperRenderer />
-
-      {/* 图片处理器 */}
-      {hasImages && <ImageProcessor />}
     </>
   );
 }

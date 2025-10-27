@@ -39,11 +39,8 @@ function toSlugPath(slugSegments) {
 }
 
 export async function fetchPage(slugSegments) {
-  // console.log("fetchPage slugSegments:", slugSegments);
   const slugPath = toSlugPath(slugSegments);
-  console.log("路径:", slugPath);
   const url = buildApiUrl(`/v2/aisite/pages/${encodeURIComponent(slugPath)}`);
-  console.log("获取数据的url:", url);
 
   let response;
 
@@ -63,8 +60,6 @@ export async function fetchPage(slugSegments) {
     logError("页面接口请求失败。", { error, slug: slugPath });
     throw new PageServiceError("Failed to reach page API.", { cause: error });
   }
-
-  console.log("接口返回状态 status:", response.status);
 
   if (response.status === 404) {
     throw new PageNotFoundError(slugPath);
@@ -90,8 +85,6 @@ export async function fetchPage(slugSegments) {
   if (!data || typeof data !== "object") {
     throw new PageServiceError("Invalid response from page API.");
   }
-
-  console.log("html数据:", data);
 
   return {
     slug: slugPath,
