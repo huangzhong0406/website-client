@@ -55,6 +55,8 @@ export default function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         {cdnOrigin && <link rel="dns-prefetch" href={cdnOrigin} />}
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+        <script src="https://cdn.tailwindcss.com" defer></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
