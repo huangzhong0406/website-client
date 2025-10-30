@@ -57,7 +57,11 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         {/* 预连接CDN */}
         <link rel="preconnect" href="https://cdn.tailwindcss.com" /> 
-        <script src="https://cdn.tailwindcss.com" ></script>
+        <script 
+          src="https://cdn.tailwindcss.com" 
+          async 
+          onLoad="this.onload=null"
+        ></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
