@@ -54,7 +54,7 @@ export default function RootLayout({children}) {
         {/* 预连接CDN */}
         <link rel="preconnect" href="https://unpkg.com" crossOrigin="" />
         {/* 引入 Tailwind CSS 通过 CDN 方式加载  */}
-        {/* <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" /> */}
+        <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
