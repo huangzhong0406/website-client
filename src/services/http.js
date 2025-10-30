@@ -1,22 +1,14 @@
-import { logWarn } from "../lib/logger";
+import {logWarn} from "../lib/logger";
 
 // API 基础地址：指向 Laravel 渲染端接口
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ??
-  process.env.API_BASE ??
-  "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? process.env.API_BASE ?? "";
 
 if (!API_BASE) {
-  logWarn(
-    "NEXT_PUBLIC_API_BASE 未设置，渲染端无法请求页面数据。"
-  );
+  logWarn("NEXT_PUBLIC_API_BASE 未设置，渲染端无法请求页面数据。");
 }
 
 // API Token：若后端需要鉴权，可在环境变量中配置
-const API_TOKEN =
-  process.env.NEXT_PUBLIC_API_TOKEN ??
-  process.env.API_TOKEN ??
-  process.env.RENDERER_API_TOKEN;
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN ?? process.env.API_TOKEN ?? process.env.RENDERER_API_TOKEN;
 
 // 组合接口地址，附带可选查询参数
 export function buildApiUrl(pathname, searchParams) {
@@ -37,16 +29,22 @@ export function buildApiUrl(pathname, searchParams) {
 }
 
 // 封装 fetch，默认携带 JSON Accept 与鉴权信息
-export async function apiFetch(input, init = {}) {
+export async function apiFetch(input, slug, init = {}) {
   const timeout = init.timeout || 8000; // 默认8秒超时
   const controller = new AbortController();
-  
+
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   const finalInit = {
+    cache: "no-store",
+    cf: {
+      cacheEverything: true,
+      cacheTtl: 600,
+      cacheKey: `tenant-meta:pages:${slug}`,
+    },
     headers: {
       Accept: "application/json",
-      ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
+      ...(API_TOKEN ? {Authorization: `Bearer ${API_TOKEN}`} : {}),
       ...init.headers,
     },
     signal: controller.signal,
@@ -62,4 +60,3 @@ export async function apiFetch(input, init = {}) {
     throw error;
   }
 }
-

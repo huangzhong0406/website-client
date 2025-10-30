@@ -122,7 +122,7 @@ export default async function RenderedPage({params}) {
     logError("导航服务发生错误。", {error: navigationResult.reason});
   }
 
-  console.log("打印 html 内容：", page);
+  // console.log("打印 html 内容：", page);
 
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
     ...page,
@@ -132,8 +132,6 @@ export default async function RenderedPage({params}) {
     globalComponents: globalComponents, // 全局组件
   });
 
-  console.log("RenderedPage preloadResources:", html);
-  console.log("RenderedPage hasSwipers:", hasSwipers);
   console.log("RenderedPage swiperScripts count:", swiperScripts?.length || 0);
 
   return (
@@ -153,12 +151,7 @@ export default async function RenderedPage({params}) {
       {deferredCss && <DeferredStyle css={deferredCss} id="page-deferred-css" />}
 
       {/* Swiper 初始化 - 动态加载和执行脚本 */}
-      {hasSwipers && (
-        <SwiperLoader
-          scripts={swiperScripts}
-          preloadSwiper={true}
-        />
-      )}
+      {hasSwipers && <SwiperLoader scripts={swiperScripts} preloadSwiper={true} />}
     </>
   );
 }
