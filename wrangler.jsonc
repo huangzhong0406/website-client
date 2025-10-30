@@ -1,0 +1,32 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ 
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "website-client",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-10-30",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".open-next/assets"
+	},
+	"r2_buckets": [
+		{
+			"binding": "__OPEN_NEXT_CACHE_BUCKET",
+			"bucket_name": "sc-static"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "TENANTS",
+			"id": "7ea3b67927124be2bb54ee6630235af4"
+		}
+	],
+	"observability": {
+		"enabled": true,
+    	"head_sampling_rate": 1
+	},
+	"upload_source_maps": true
+}
