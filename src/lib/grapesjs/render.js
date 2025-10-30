@@ -461,7 +461,7 @@ function splitCss(css) {
   for (const rule of rules) {
     const ruleSize = rule.length;
     const isCritical = isCriticalRule(rule);
-    
+
     // 关键规则优先，或者还有空间时添加
     if (isCritical || currentSize + ruleSize <= limit) {
       criticalRules.push(rule);
@@ -472,8 +472,8 @@ function splitCss(css) {
   }
 
   return {
-    criticalCss: criticalRules.join(''),
-    deferredCss: deferredRules.join('')
+    criticalCss: criticalRules.join(""),
+    deferredCss: deferredRules.join(""),
   };
 }
 
@@ -488,10 +488,10 @@ function isCriticalRule(rule) {
     /\b(font|color|background)\s*:/,
     /\b(display|position|width|height)\s*:/,
     /\.(hero|banner|header|nav)\b/,
-    /@media\s*\([^)]*\)\s*{[^}]*}/
+    /@media\s*\([^)]*\)\s*{[^}]*}/,
   ];
-  
-  return criticalPatterns.some(pattern => pattern.test(rule));
+
+  return criticalPatterns.some((pattern) => pattern.test(rule));
 }
 
 /**
@@ -618,12 +618,12 @@ function processSwiperOptimization($, preloadResources) {
   // 添加Swiper CSS/JS到预加载资源
   preloadResources.push(
     {
-      href: "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css",
+      href: "https://cdn.jsdelivr.net/npm/swiper@11.0.5/swiper-bundle.min.css",
       as: "style",
       type: "text/css",
     },
     {
-      href: "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js",
+      href: "https://cdn.jsdelivr.net/npm/swiper@11.0.5/swiper-bundle.min.js",
       as: "script",
       type: "text/javascript",
     }

@@ -17,7 +17,8 @@ export class ProductServiceError extends Error {
 /**
  * 获取产品列表数据
  */
-export async function fetchProducts() {
+export async function fetchProducts(tenant) {
+  void tenant;
   // 直接返回假数据，避免无效API调用
   return [
     {

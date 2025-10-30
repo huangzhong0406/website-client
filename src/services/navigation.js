@@ -3,43 +3,41 @@
  * 用于获取和管理网站导航数据
  */
 
-import { apiFetch, buildApiUrl } from './http.js';
+import {apiFetch, buildApiUrl} from "./http.js";
 
 /**
  * 获取所有页面列表用于导航菜单
  * @returns {Promise<Array>} 页面列表数组
  */
-export async function fetchNavigationPages() {
-  // 直接返回假数据，避免无效API调用
+export async function fetchNavigationPages(tenant) {
+  // 直接返回假数据，避免无效 API 调用
+  void tenant;
   return [
-    { slug: 'home', title: '首页', path: '/', order: 0, showInNav: true },
-    { slug: 'aboutus', title: '关于我们', path: '/aboutus', order: 1, showInNav: true },
+    {slug: "home", title: "首页", path: "/", order: 0, showInNav: true},
+    {slug: "aboutus", title: "关于我们", path: "/aboutus", order: 1, showInNav: true},
   ];
-  
-  // 注释掉的真实API调用代码
+
+  // 注释掉的真实 API 调用代码
   /*
   try {
-    const url = buildApiUrl('/v2/aisite/pages');
+    const url = buildApiUrl("/v2/aisite/pages");
 
-    const response = await apiFetch(url, {
+    const response = await apiFetch(url, undefined, {
       timeout: 3000,
+      tenant,
       next: {
-        revalidate: 300, // 5分钟缓存
-        tags: ['navigation', 'pages']
-      }
+        revalidate: 300, // 5 分钟缓存
+        tags: ["navigation", "pages"],
+      },
     });
 
-    // 如果返回的不是数组，尝试提取数组
-    const pages = Array.isArray(response) ? response : (response.data || response.pages || []);
+    const pages = Array.isArray(response) ? response : response?.data || response?.pages || [];
 
-    // 过滤出需要显示在导航中的页面
-    const visiblePages = pages.filter(page => {
-      // 只显示已发布的页面
-      if (page.publishStatus && page.publishStatus !== 'published') {
+    const visiblePages = pages.filter((page) => {
+      if (page.publishStatus && page.publishStatus !== "published") {
         return false;
       }
 
-      // 支持 showInNav 字段控制是否显示
       if (page.showInNav === false) {
         return false;
       }
@@ -47,28 +45,22 @@ export async function fetchNavigationPages() {
       return true;
     });
 
-    // 按 order 字段排序，如果没有 order 字段则保持原顺序
     const sortedPages = visiblePages.sort((a, b) => {
       const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
       const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
       return orderA - orderB;
     });
 
-    // 标准化数据格式
-    return sortedPages.map(page => ({
+    return sortedPages.map((page) => ({
       slug: page.slug,
       title: page.title || page.meta?.title || page.slug,
-      path: page.path || (page.slug === 'home' ? '/' : `/${page.slug}`),
+      path: page.path || (page.slug === "home" ? "/" : `/${page.slug}`),
       order: page.order ?? 0,
       showInNav: page.showInNav !== false,
     }));
   } catch (error) {
-    console.error('Failed to fetch navigation pages:', error);
-
-    // 返回默认导航结构作为降级方案
-    return [
-      { slug: 'home', title: '首页', path: '/', order: 0, showInNav: true },
-    ];
+    console.error("Failed to fetch navigation pages:", error);
+    return [{slug: "home", title: "首页", path: "/", order: 0, showInNav: true}];
   }
   */
 }
@@ -80,7 +72,7 @@ export async function fetchNavigationPages() {
  * @returns {Object} 包含前一页和后一页的信息
  */
 export function getAdjacentPages(currentSlug, pages) {
-  const currentIndex = pages.findIndex(page => page.slug === currentSlug);
+  const currentIndex = pages.findIndex((page) => page.slug === currentSlug);
 
   return {
     previous: currentIndex > 0 ? pages[currentIndex - 1] : null,
@@ -93,15 +85,13 @@ export function getAdjacentPages(currentSlug, pages) {
  * 构建面包屑导航
  * @param {string} slug - 当前页面的 slug
  * @param {Array} pages - 所有页面列表
- * @returns {Array} 面包屑路径数组
+ * @returns {Array} 面包屑路径数据
  */
 export function buildBreadcrumb(slug, pages) {
-  const breadcrumb = [
-    { title: '首页', path: '/', slug: 'home' }
-  ];
+  const breadcrumb = [{title: "首页", path: "/", slug: "home"}];
 
-  if (slug && slug !== 'home') {
-    const currentPage = pages.find(page => page.slug === slug);
+  if (slug && slug !== "home") {
+    const currentPage = pages.find((page) => page.slug === slug);
     if (currentPage) {
       breadcrumb.push({
         title: currentPage.title,
@@ -123,8 +113,7 @@ export function buildBreadcrumb(slug, pages) {
 export function isActivePath(path, currentPath) {
   if (path === currentPath) return true;
 
-  // 处理首页特殊情况
-  if ((path === '/' || path === '/home') && (currentPath === '/' || currentPath === '/home')) {
+  if ((path === "/" || path === "/home") && (currentPath === "/" || currentPath === "/home")) {
     return true;
   }
 
@@ -137,3 +126,4 @@ export default {
   buildBreadcrumb,
   isActivePath,
 };
+
