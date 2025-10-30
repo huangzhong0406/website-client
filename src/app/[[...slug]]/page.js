@@ -1,7 +1,7 @@
 import {cache} from "react";
 import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
-import SwiperRenderer from "../../components/SwiperRenderer";
+import SwiperLoader from "../../components/SwiperLoader";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
 import {fetchProducts} from "../../services/products";
 import {fetchNavigationPages} from "../../services/navigation";
@@ -97,64 +97,53 @@ export default async function RenderedPage({params}) {
 
   // 检查需要哪些额外数据
   const hasProductList = page.html?.includes('data-component-type="product-list"');
-  const hasGlobalNav = page.html?.includes('data-component-type="global-navigation"');
+  const hasGlobalNav = page.html?.includes('data-component-type="tailwind-navbar"');
 
   // 并行获取所有需要的数据
   const [globalComponentsResult, productsResult, navigationResult] = await Promise.allSettled([
     getGlobalComponents(),
     hasProductList ? getProductData() : Promise.resolve(null),
-    hasGlobalNav ? getNavigationData() : Promise.resolve(null)
+    hasGlobalNav ? getNavigationData() : Promise.resolve(null),
   ]);
 
   // 处理结果，失败不影响页面渲染
-  const globalComponents = globalComponentsResult.status === 'fulfilled' ? globalComponentsResult.value : null;
-  const products = productsResult.status === 'fulfilled' ? productsResult.value : null;
-  const navigation = navigationResult.status === 'fulfilled' ? navigationResult.value : null;
+  const globalComponents = globalComponentsResult.status === "fulfilled" ? globalComponentsResult.value : null;
+  const products = productsResult.status === "fulfilled" ? productsResult.value : null;
+  const navigation = navigationResult.status === "fulfilled" ? navigationResult.value : null;
 
   // 记录错误但不中断渲染
-  if (globalComponentsResult.status === 'rejected') {
+  if (globalComponentsResult.status === "rejected") {
     logError("全局组件服务发生错误。", {error: globalComponentsResult.reason});
   }
-  if (productsResult.status === 'rejected') {
+  if (productsResult.status === "rejected") {
     logError("产品服务发生错误。", {error: productsResult.reason});
   }
-  if (navigationResult.status === 'rejected') {
+  if (navigationResult.status === "rejected") {
     logError("导航服务发生错误。", {error: navigationResult.reason});
   }
 
-  // 检查全局组件中是否也需要导航数据
-  let finalNavigation = navigation;
-  if (!finalNavigation && globalComponents?.navigation) {
-    try {
-      finalNavigation = await getNavigationData();
-    } catch (error) {
-      logError("导航服务发生错误。", {error});
-    }
-  }
+  console.log("打印 html 内容：", page);
 
-  const {html, criticalCss, deferredCss, preloadResources} = prepareGrapesContent({
+  const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
     ...page,
-    productData: products,
-    navigationData: finalNavigation,
+    productData: products, // 产品数据
+    navigationData: navigation, // 导航数据
     currentSlug: page.slug,
-    globalComponents: globalComponents,
+    globalComponents: globalComponents, // 全局组件
   });
+
+  console.log("RenderedPage preloadResources:", html);
+  console.log("RenderedPage hasSwipers:", hasSwipers);
+  console.log("RenderedPage swiperScripts count:", swiperScripts?.length || 0);
 
   return (
     <>
-      {/* 预加载关键资源 */}
+      {/* 预加载关键资源（包含 Swiper CSS/JS + 首屏图片）*/}
       {preloadResources.map((resource, index) => (
-        <link
-          key={index}
-          rel="preload"
-          href={resource.href}
-          as={resource.as}
-          type={resource.type}
-          fetchPriority={resource.fetchPriority}
-        />
+        <link key={index} rel="preload" href={resource.href} as={resource.as} type={resource.type} fetchPriority={resource.fetchPriority} />
       ))}
 
-      {/* 首屏关键 CSS 内联，避免额外请求影响 LCP */}
+      {/* 首屏关键 CSS 内联（包含 Swiper 关键样式），避免额外请求影响 LCP */}
       {criticalCss && <style data-critical="true" dangerouslySetInnerHTML={{__html: criticalCss}} />}
 
       {/* GrapesJS 导出的 HTML 片段直接插入，保持编辑端排版 */}
@@ -163,8 +152,13 @@ export default async function RenderedPage({params}) {
       {/* 非关键 CSS 在浏览器空闲时插入，降低首屏阻塞 */}
       {deferredCss && <DeferredStyle css={deferredCss} id="page-deferred-css" />}
 
-      {/* Swiper 初始化 */}
-      <SwiperRenderer />
+      {/* Swiper 初始化 - 动态加载和执行脚本 */}
+      {hasSwipers && (
+        <SwiperLoader
+          scripts={swiperScripts}
+          preloadSwiper={true}
+        />
+      )}
     </>
   );
 }

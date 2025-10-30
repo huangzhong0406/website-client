@@ -1,10 +1,8 @@
-import { load } from "cheerio";
-import { logWarn } from "../logger";
+import {load} from "cheerio";
+import {logWarn} from "../logger";
 
 // 关键 CSS 截断长度,超出部分将延迟注入
-const DEFAULT_CRITICAL_CSS_LIMIT = Number(
-  process.env.CRITICAL_CSS_LIMIT ?? 4000
-);
+const DEFAULT_CRITICAL_CSS_LIMIT = Number(process.env.CRITICAL_CSS_LIMIT ?? 4000);
 
 export function prepareGrapesContent({
   html = "",
@@ -23,6 +21,8 @@ export function prepareGrapesContent({
       criticalCss: "",
       deferredCss: "",
       preloadResources: [],
+      swiperScripts: [],
+      hasSwipers: false,
     };
   }
 
@@ -31,12 +31,14 @@ export function prepareGrapesContent({
 
   if (!needsProcessing) {
     // 无需处理,直接返回
-    const { criticalCss, deferredCss } = splitCss(css);
+    const {criticalCss, deferredCss} = splitCss(css);
     return {
       html,
       criticalCss,
       deferredCss,
-      preloadResources: ['https://shopsource.singoo.cc/sections/images/800_600.jpg'],
+      preloadResources: [],
+      swiperScripts: [],
+      hasSwipers: false,
     };
   }
 
@@ -63,14 +65,32 @@ export function prepareGrapesContent({
     preloadResources,
   });
 
+  // 处理Swiper组件优化
+  const hasSwipers = processSwiperOptimization($, preloadResources);
+  
+  // 提取Swiper脚本
+  const swiperScripts = hasSwipers ? extractSwiperScripts($) : [];
+
   const normalizedHtml = $.root().html() || "";
-  const { criticalCss, deferredCss } = splitCss(css);
+
+  // 分离页面CSS
+  const {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
+
+  // 合并Swiper关键CSS（如果页面包含Swiper）
+  const swiperCriticalCss = hasSwipers ? getSwiperCriticalCss() : "";
+  const criticalCss = swiperCriticalCss ? pageCriticalCss + "\n" + swiperCriticalCss : pageCriticalCss;
+
+  console.log("prepareGrapesContent preloadResources:", preloadResources);
+  console.log("prepareGrapesContent hasSwipers:", hasSwipers);
+  console.log("prepareGrapesContent swiperScripts count:", swiperScripts.length);
 
   return {
     html: normalizedHtml,
     criticalCss,
     deferredCss,
     preloadResources,
+    swiperScripts,
+    hasSwipers,
   };
 }
 
@@ -78,10 +98,7 @@ function buildAssetMap(assets) {
   return new Map(
     (assets ?? [])
       .filter(Boolean)
-      .map((asset) => [
-        asset?.src ?? asset?.url ?? asset?.path ?? "",
-        asset ?? {},
-      ])
+      .map((asset) => [asset?.src ?? asset?.url ?? asset?.path ?? "", asset ?? {}])
       .filter(([key]) => Boolean(key))
   );
 }
@@ -90,7 +107,7 @@ function buildAssetMap(assets) {
  * 单次遍历处理所有动态内容
  * 优化策略:先注入全局组件,然后单次遍历处理所有需要的元素
  */
-function processDynamicContent($, { globalComponents, productData, navigationData, currentSlug, assetMap, preloadResources }) {
+function processDynamicContent($, {globalComponents, productData, navigationData, currentSlug, assetMap, preloadResources}) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
     injectGlobalComponents($, globalComponents);
@@ -100,41 +117,39 @@ function processDynamicContent($, { globalComponents, productData, navigationDat
   let lcpAssigned = false;
 
   // 使用单次遍历处理所有元素
-  $('*').each((_index, element) => {
+  $("*").each((_index, element) => {
     const $elem = $(element);
-    const componentType = $elem.attr('data-component-type');
+    const componentType = $elem.attr("data-component-type");
 
     // 处理产品列表组件
-    if (componentType === 'product-list' && productData) {
+    if (componentType === "product-list" && productData) {
       processProductListComponent($, $elem, productData);
     }
 
-    // 处理全局导航组件
-    else if (componentType === 'global-navigation' && navigationData) {
-      processGlobalNavigationComponent($, $elem, navigationData, currentSlug);
-    }
+    // // 处理全局导航组件
+    // else if (componentType === "tailwind-navbar" && navigationData) {
+    //   processGlobalNavigationComponent($, $elem, navigationData, currentSlug);
+    // }
 
     // 处理图片优化并收集预加载资源
-    else if (element.tagName === 'img') {
-      const src = $elem.attr('src');
-      const shouldPrioritize = assetMap
-        ? enhanceImage($, $elem, assetMap, lcpAssigned)
-        : !lcpAssigned && isHeroCandidate($elem);
+    else if (element.tagName === "img") {
+      const src = $elem.attr("src");
+      const shouldPrioritize = assetMap ? enhanceImage($, $elem, assetMap, lcpAssigned) : !lcpAssigned && isHeroCandidate($elem);
 
       if (shouldPrioritize && src) {
         // 添加到预加载资源列表
         preloadResources.push({
           href: src,
-          as: 'image',
+          as: "image",
           type: getImageType(src),
-          fetchPriority: 'high',
+          fetchPriority: "high",
         });
         lcpAssigned = true;
 
         // 如果没有assetMap,手动设置属性
         if (!assetMap) {
-          $elem.attr('loading', 'eager');
-          $elem.attr('fetchpriority', 'high');
+          $elem.attr("loading", "eager");
+          $elem.attr("fetchpriority", "high");
         }
       }
     }
@@ -146,35 +161,39 @@ function processDynamicContent($, { globalComponents, productData, navigationDat
  * 如果页面中不存在全局组件,则自动注入
  */
 function injectGlobalComponents($, globalComponents) {
-  if (!globalComponents || typeof globalComponents !== 'object') {
+  if (!globalComponents || typeof globalComponents !== "object") {
     return;
   }
 
-  const body = $('body');
+  const body = $("body");
   const root = body.length > 0 ? body : $.root();
 
   // 检查是否已存在全局组件
-  const hasNavigation = $('[data-component-type="global-navigation"]').length > 0;
-  const hasFooter = $('[data-component-type="global-footer"]').length > 0;
+  const hasNavigation = $('[data-component-type="tailwind-navbar"]').length > 0;
+  const hasFooter = $('[data-component-type="tailwind-footer"]').length > 0;
 
-  // 注入全局导航(如果存在且页面中不存在)
-  if (globalComponents.navigation && !hasNavigation) {
-    if (body.length > 0) {
-      body.prepend(globalComponents.navigation);
+  console.log("检查是否存在导航栏组件:", hasNavigation);
+  console.log(globalComponents.navigation);
+
+  // 注入全局导航 - 没有的话就插入，有的话就替换第一个
+  if (globalComponents.navigation?.html) {
+    if (hasNavigation) {
+      $('[data-component-type="tailwind-navbar"]').first().replaceWith(globalComponents.navigation.html);
     } else {
-      root.prepend(globalComponents.navigation);
+      root.prepend(globalComponents.navigation.html);
     }
-    logWarn('已自动注入全局导航组件');
+    logWarn("已自动注入全局导航组件");
   }
 
-  // 注入全局页脚(如果存在且页面中不存在)
-  if (globalComponents.footer && !hasFooter) {
-    if (body.length > 0) {
-      body.append(globalComponents.footer);
+  // 注入全局页脚 - 没有的话就插入，有的话就替换第一个
+  console.log("检查是否存在页脚组件:", hasFooter);
+  if (globalComponents.footer?.html) {
+    if (hasFooter) {
+      $('[data-component-type="tailwind-footer"]').first().replaceWith(globalComponents.footer.html);
     } else {
-      root.append(globalComponents.footer);
+      root.append(globalComponents.footer.html);
     }
-    logWarn('已自动注入全局页脚组件');
+    logWarn("已自动注入全局页脚组件");
   }
 }
 
@@ -188,25 +207,25 @@ function processProductListComponent($, $elem, products) {
   }
 
   // 获取组件配置
-  const maxProducts = parseInt($elem.attr('data-max-products')) || 12;
+  const maxProducts = parseInt($elem.attr("data-max-products")) || 12;
   const displayProducts = products.slice(0, maxProducts);
 
   // 移除编辑器标识(如果存在)
-  $elem.find('.editor-badge').remove();
+  $elem.find(".editor-badge").remove();
 
   // 查找产品列表容器
-  const $productList = $elem.find('.product-list');
+  const $productList = $elem.find(".product-list");
 
   if ($productList.length === 0) {
-    logWarn('产品列表容器 .product-list 未找到');
+    logWarn("产品列表容器 .product-list 未找到");
     return;
   }
 
   // 查找第一个产品项作为模板
-  const $templateItem = $productList.find('.product-item').first();
+  const $templateItem = $productList.find(".product-item").first();
 
   if ($templateItem.length === 0) {
-    logWarn('产品项模板 .product-item 未找到');
+    logWarn("产品项模板 .product-item 未找到");
     return;
   }
 
@@ -221,28 +240,28 @@ function processProductListComponent($, $elem, products) {
     const $productItem = $(templateHTML);
 
     // 替换产品图片
-    const $img = $productItem.find('.product-image img, img');
+    const $img = $productItem.find(".product-image img, img");
     if ($img.length > 0) {
-      $img.attr('src', product.image || 'https://via.placeholder.com/300');
-      $img.attr('alt', product.name || '');
+      $img.attr("src", product.image || "https://via.placeholder.com/300");
+      $img.attr("alt", product.name || "");
     }
 
     // 替换产品名称
-    const $name = $productItem.find('.product-name, h3');
+    const $name = $productItem.find(".product-name, h3");
     if ($name.length > 0) {
-      $name.text(product.name || '');
+      $name.text(product.name || "");
     }
 
     // 替换产品价格
-    const $price = $productItem.find('.product-price');
+    const $price = $productItem.find(".product-price");
     if ($price.length > 0) {
-      $price.text(product.price || '');
+      $price.text(product.price || "");
     }
 
     // 替换产品描述
-    const $description = $productItem.find('.product-description');
+    const $description = $productItem.find(".product-description");
     if ($description.length > 0) {
-      $description.text(product.description || '');
+      $description.text(product.description || "");
     }
 
     // 添加到产品列表
@@ -254,26 +273,26 @@ function processProductListComponent($, $elem, products) {
  * 处理全局导航组件
  * 复用编辑器保存的HTML结构,动态替换菜单项
  */
-function processGlobalNavigationComponent($, $nav, navigationPages, currentSlug = '') {
+function processGlobalNavigationComponent($, $nav, navigationPages, currentSlug = "") {
   if (!Array.isArray(navigationPages) || navigationPages.length === 0) {
     return;
   }
 
   // 获取配置
-  const showLogo = $nav.attr('data-show-logo') !== 'false';
-  const theme = $nav.attr('data-theme') || 'light';
-  const navStyle = $nav.attr('data-nav-style') || 'horizontal';
+  const showLogo = $nav.attr("data-show-logo") !== "false";
+  const theme = $nav.attr("data-theme") || "light";
+  const navStyle = $nav.attr("data-nav-style") || "horizontal";
 
   // 查找菜单容器
-  const $menu = $nav.find('.nav-menu');
+  const $menu = $nav.find(".nav-menu");
   if ($menu.length === 0) {
-    logWarn('导航菜单容器 .nav-menu 未找到');
+    logWarn("导航菜单容器 .nav-menu 未找到");
     return;
   }
 
   // 获取第一个菜单项作为模板(如果存在)
-  const $templateItem = $menu.find('.nav-item, li').first();
-  let templateHTML = '';
+  const $templateItem = $menu.find(".nav-item, li").first();
+  let templateHTML = "";
 
   if ($templateItem.length > 0) {
     templateHTML = $.html($templateItem);
@@ -290,26 +309,19 @@ function processGlobalNavigationComponent($, $nav, navigationPages, currentSlug 
     const $menuItem = $(templateHTML);
 
     // 查找链接元素
-    const $link = $menuItem.find('a').length > 0
-      ? $menuItem.find('a')
-      : $menuItem.is('a')
-      ? $menuItem
-      : null;
+    const $link = $menuItem.find("a").length > 0 ? $menuItem.find("a") : $menuItem.is("a") ? $menuItem : null;
 
     if ($link) {
       // 设置链接属性
-      $link.attr('href', page.path);
+      $link.attr("href", page.path);
       $link.text(page.title);
 
       // 标记当前激活的页面
-      const isActive =
-        currentSlug === page.slug ||
-        (currentSlug === '' && page.slug === 'home') ||
-        (currentSlug === 'home' && page.slug === 'home');
+      const isActive = currentSlug === page.slug || (currentSlug === "" && page.slug === "home") || (currentSlug === "home" && page.slug === "home");
 
       if (isActive) {
-        $link.addClass('active');
-        $menuItem.addClass('active');
+        $link.addClass("active");
+        $menuItem.addClass("active");
       }
     }
 
@@ -318,17 +330,17 @@ function processGlobalNavigationComponent($, $nav, navigationPages, currentSlug 
 
   // 处理 Logo 显示
   if (!showLogo) {
-    $nav.find('.nav-brand').css('display', 'none');
+    $nav.find(".nav-brand").css("display", "none");
   }
 
   // 应用主题
-  if (theme === 'dark') {
-    $nav.attr('data-theme', 'dark');
+  if (theme === "dark") {
+    $nav.attr("data-theme", "dark");
   }
 
   // 应用导航样式
-  if (navStyle === 'vertical') {
-    $nav.attr('data-nav-style', 'vertical');
+  if (navStyle === "vertical") {
+    $nav.attr("data-nav-style", "vertical");
   }
 }
 
@@ -347,8 +359,7 @@ function enhanceImage(_$, node, assetMap, lcpAssigned) {
   let isPriority = false;
 
   if (!node.attr("loading")) {
-    const shouldPrioritize =
-      Boolean(meta?.priority) || (!lcpAssigned && isHeroCandidate(node));
+    const shouldPrioritize = Boolean(meta?.priority) || (!lcpAssigned && isHeroCandidate(node));
 
     if (shouldPrioritize) {
       node.attr("loading", "eager");
@@ -394,9 +405,7 @@ function enhanceImage(_$, node, assetMap, lcpAssigned) {
 
 function isHeroCandidate(node) {
   const classes = (node.attr("class") ?? "").split(/\s+/);
-  return classes.some((className) =>
-    ["hero", "banner", "cover", "main-image"].includes(className)
-  );
+  return classes.some((className) => ["hero", "banner", "cover", "main-image"].includes(className));
 }
 
 function applyPictureSources(node, sources) {
@@ -406,10 +415,7 @@ function applyPictureSources(node, sources) {
       parent.children("source").remove();
     }
 
-    const picture =
-      parent && parent.is("picture")
-        ? parent
-        : node.wrap("<picture></picture>").parent();
+    const picture = parent && parent.is("picture") ? parent : node.wrap("<picture></picture>").parent();
 
     sources.forEach((source) => {
       if (!source?.srcset && !source?.srcSet) return;
@@ -418,10 +424,7 @@ function applyPictureSources(node, sources) {
       const created = picture
         .children("source")
         .first()
-        .attr(
-          "srcset",
-          source.srcset ?? source.srcSet ?? source.src ?? source.url ?? ""
-        );
+        .attr("srcset", source.srcset ?? source.srcSet ?? source.src ?? source.url ?? "");
 
       if (source.type) {
         created.attr("type", source.type);
@@ -432,47 +435,252 @@ function applyPictureSources(node, sources) {
       }
     });
   } catch (error) {
-    logWarn("包装 picture 标签失败。", { error });
+    logWarn("包装 picture 标签失败。", {error});
   }
 }
 
 function splitCss(css) {
   if (!css) {
-    return { criticalCss: "", deferredCss: "" };
+    return {criticalCss: "", deferredCss: ""};
   }
 
-  const limit =
-    Number.isFinite(DEFAULT_CRITICAL_CSS_LIMIT) && DEFAULT_CRITICAL_CSS_LIMIT > 0
-      ? DEFAULT_CRITICAL_CSS_LIMIT
-      : css.length;
+  const limit = Number.isFinite(DEFAULT_CRITICAL_CSS_LIMIT) && DEFAULT_CRITICAL_CSS_LIMIT > 0 ? DEFAULT_CRITICAL_CSS_LIMIT : css.length;
 
   if (css.length <= limit) {
-    return { criticalCss: css, deferredCss: "" };
+    return {criticalCss: css, deferredCss: ""};
   }
 
   // 超出关键长度的 CSS 放入 deferred,客户端空闲时再写入
   const criticalCss = css.slice(0, limit);
   const deferredCss = css.slice(limit);
 
-  return { criticalCss, deferredCss };
+  return {criticalCss, deferredCss};
 }
 
 /**
  * 根据图片URL获取MIME类型
  */
 function getImageType(src) {
-  if (!src) return 'image/jpeg';
+  if (!src) return "image/jpeg";
 
-  const ext = src.split('.').pop()?.toLowerCase().split('?')[0];
+  const ext = src.split(".").pop()?.toLowerCase().split("?")[0];
   const typeMap = {
-    'avif': 'image/avif',
-    'webp': 'image/webp',
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'gif': 'image/gif',
-    'svg': 'image/svg+xml',
+    avif: "image/avif",
+    webp: "image/webp",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    svg: "image/svg+xml",
   };
 
-  return typeMap[ext] || 'image/jpeg';
+  return typeMap[ext] || "image/jpeg";
+}
+
+/**
+ * 提取所有Swiper初始化脚本
+ * 从HTML中提取<script>标签内的Swiper初始化代码
+ */
+function extractSwiperScripts($) {
+  const scripts = [];
+
+  $("script").each((_i, elem) => {
+    const $script = $(elem);
+    const scriptContent = $script.html();
+
+    // 检查是否是Swiper相关的脚本
+    if (scriptContent && (scriptContent.includes("Swiper") || scriptContent.includes("swiper"))) {
+      scripts.push({
+        content: scriptContent,
+        type: $script.attr("type") || "text/javascript",
+      });
+
+      // 从HTML中移除脚本标签（稍后在客户端执行）
+      $script.remove();
+    }
+  });
+
+  return scripts;
+}
+
+/**
+ * 估算元素高度（用于判断是否在首屏）
+ */
+function estimateElementHeight($, $elem) {
+  const tagName = $elem.get(0)?.tagName?.toLowerCase();
+
+  if (!tagName) return 100;
+
+  // 根据标签类型粗略估计高度
+  if (tagName === "nav" || tagName === "header") return 80;
+  if ($elem.find("img").length > 0) return 400;
+  if (tagName === "section" || tagName === "div") return 200;
+
+  return 100; // 默认高度
+}
+
+/**
+ * 判断Swiper是否在首屏（混合策略）
+ * 优先级：手动标记 > 类名检测 > 位置检测 > 高度估算
+ */
+function isSwiperAboveFold($, $swiper) {
+  // 1. 优先检查手动标记
+  const priority = $swiper.attr("data-priority");
+  if (priority === "high") return true;
+  if (priority === "low") return false;
+
+  // 2. 检查类名关键词
+  const classes = ($swiper.attr("class") || "").toLowerCase();
+  const heroKeywords = ["hero", "banner", "main", "top", "header"];
+  if (heroKeywords.some((keyword) => classes.includes(keyword))) {
+    return true;
+  }
+
+  // 3. 检查位置（在body的前3个主要元素内）
+  const bodyChildren = $("body").children().not("script, style, link");
+  const allSwipers = bodyChildren.find(".gjs-swiper-root, .swiper-container").addBack(".gjs-swiper-root, .swiper-container");
+  const swiperIndex = allSwipers.index($swiper);
+
+  // 第一个Swiper通常是首屏
+  if (swiperIndex === 0) {
+    return true;
+  }
+
+  // 4. 粗略估算垂直位置
+  let estimatedY = 0;
+  const VIEWPORT_HEIGHT = 800; // 假设视口高度
+
+  bodyChildren.each((_i, elem) => {
+    const $elem = $(elem);
+
+    if ($elem.is($swiper) || $elem.has($swiper).length > 0) {
+      return false; // 找到目标，停止遍历
+    }
+
+    const estimatedHeight = estimateElementHeight($, $elem);
+    estimatedY += estimatedHeight;
+  });
+
+  return estimatedY < VIEWPORT_HEIGHT;
+}
+
+/**
+ * 处理Swiper组件优化
+ * 1. 识别首屏Swiper
+ * 2. 为首屏Swiper的第一张图片添加高优先级
+ * 3. 为非首屏Swiper图片添加懒加载
+ * 4. 添加Swiper CSS/JS到预加载资源
+ */
+function processSwiperOptimization($, preloadResources) {
+  const $swiperRoots = $(".gjs-swiper-root, .swiper-container");
+
+  if ($swiperRoots.length === 0) {
+    return false;
+  }
+
+  // 添加Swiper CSS/JS到预加载资源
+  preloadResources.push(
+    {
+      href: "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css",
+      as: "style",
+      type: "text/css",
+    },
+    {
+      href: "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js",
+      as: "script",
+      type: "text/javascript",
+    }
+  );
+
+  $swiperRoots.each((_index, root) => {
+    const $root = $(root);
+
+    // 使用混合策略判断是否首屏
+    const isAboveFold = isSwiperAboveFold($, $root);
+
+    // 查找该Swiper中的所有图片
+    const $images = $root.find(".swiper-slide img");
+
+    if ($images.length === 0) {
+      return;
+    }
+
+    $images.each((imgIndex, img) => {
+      const $img = $(img);
+      const src = $img.attr("src");
+
+      if (!src) return;
+
+      // 首屏Swiper的第一张图片 - 最高优先级
+      if (isAboveFold && imgIndex === 0) {
+        $img.attr("loading", "eager");
+        $img.attr("fetchpriority", "high");
+
+        // 添加到预加载资源列表
+        preloadResources.push({
+          href: src,
+          as: "image",
+          type: getImageType(src),
+          fetchPriority: "high",
+        });
+      }
+      // 首屏Swiper的其他图片（前3张）- 预加载但不是最高优先级
+      else if (isAboveFold && imgIndex < 3) {
+        $img.attr("loading", "eager");
+      }
+      // 其他Swiper的图片 - 懒加载
+      else {
+        $img.attr("loading", "lazy");
+      }
+
+      // 确保所有图片都有decoding属性
+      if (!$img.attr("decoding")) {
+        $img.attr("decoding", "async");
+      }
+    });
+  });
+
+  return true;
+}
+
+/**
+ * 获取Swiper的关键CSS
+ * 这些CSS确保即使JS未加载，轮播图的第一张也能正常显示
+ */
+export function getSwiperCriticalCss() {
+  return `
+/* Swiper 关键CSS - 确保首屏轮播图可见 */
+.swiper {
+  position: relative;
+  overflow: hidden;
+}
+
+.swiper-wrapper {
+  display: flex;
+  transition-property: transform;
+}
+
+.swiper-slide {
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 确保第一张图片始终可见（JS加载前的回退） */
+.swiper-wrapper > .swiper-slide:first-child {
+  display: block;
+}
+
+.swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 防止未初始化时的布局抖动 */
+.gjs-swiper-root {
+  min-height: 300px;
+}
+`.trim();
 }

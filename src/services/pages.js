@@ -40,13 +40,13 @@ function toSlugPath(slugSegments) {
 
 export async function fetchPage(slugSegments) {
   const slugPath = toSlugPath(slugSegments);
-  const url = buildApiUrl(`/v2/aisite/pages/${encodeURIComponent(slugPath)}`);
+  const url = buildApiUrl(`/v2/aisite/pages/${encodeURIComponent(slugPath || 'home')}`);
+  // console.log("打印 url:", url);
 
   let response;
 
   try {
     response = await apiFetch(url, {
-      timeout: 5000, // 5秒超时
       next: {
         revalidate:
           Number.isFinite(DEFAULT_REVALIDATE_SECONDS) &&
@@ -60,30 +60,42 @@ export async function fetchPage(slugSegments) {
     logError("页面接口请求失败。", { error, slug: slugPath });
     throw new PageServiceError("Failed to reach page API.", { cause: error });
   }
-
+  
   if (response.status === 404) {
     throw new PageNotFoundError(slugPath);
   }
 
-  if (!response.ok) {
-    const payload = await safeReadJson(response);
+  // console.log("打印 response:", response);
 
+  const data = await safeReadJson(response);
+  // console.log("打印 data:", data);
+
+  if (data && data.code === 404) {
+    throw new PageNotFoundError(slugPath);
+  }
+
+
+  if (!response.ok) {
     logError("页面接口返回异常响应。", {
       status: response.status,
-      payload,
+      payload: data,
       slug: slugPath,
     });
 
     throw new PageServiceError("Page API responded with an error.", {
       status: response.status,
-      payload,
+      payload: data,
     });
   }
 
-  const data = await safeReadJson(response);
-
   if (!data || typeof data !== "object") {
     throw new PageServiceError("Invalid response from page API.");
+  }
+
+  // 处理建议响应，重新请求建议的页面
+  if (data.sug && !data.html) {
+    console.log(`收到页面建议: ${data.sug}，重新请求...`);
+    return await fetchPage([data.sug]);
   }
 
   return {
