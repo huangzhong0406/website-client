@@ -52,9 +52,9 @@ export default function RootLayout({children}) {
         {cdnOrigin && <link rel="dns-prefetch" href={cdnOrigin} />}
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         {/* 预连接CDN */}
-        <link rel="preconnect" href="https://unpkg.com" crossOrigin="" />
+        {/* <link rel="preconnect" href="https://unpkg.com" crossOrigin="" /> */}
         {/* 引入 Tailwind CSS 通过 CDN 方式加载  */}
-        <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
+        {/* <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" /> */}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
