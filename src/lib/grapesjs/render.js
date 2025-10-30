@@ -67,7 +67,7 @@ export function prepareGrapesContent({
 
   // 处理Swiper组件优化
   const hasSwipers = processSwiperOptimization($, preloadResources);
-  
+
   // 提取Swiper脚本
   const swiperScripts = hasSwipers ? extractSwiperScripts($) : [];
 
@@ -450,11 +450,48 @@ function splitCss(css) {
     return {criticalCss: css, deferredCss: ""};
   }
 
-  // 超出关键长度的 CSS 放入 deferred,客户端空闲时再写入
-  const criticalCss = css.slice(0, limit);
-  const deferredCss = css.slice(limit);
+  // 智能分离：优先保留关键CSS规则
+  const criticalRules = [];
+  const deferredRules = [];
+  let currentSize = 0;
 
-  return {criticalCss, deferredCss};
+  // 按规则分割CSS
+  const rules = css.split(/(?<=})\s*(?=[.#@])/g).filter(Boolean);
+
+  for (const rule of rules) {
+    const ruleSize = rule.length;
+    const isCritical = isCriticalRule(rule);
+    
+    // 关键规则优先，或者还有空间时添加
+    if (isCritical || currentSize + ruleSize <= limit) {
+      criticalRules.push(rule);
+      currentSize += ruleSize;
+    } else {
+      deferredRules.push(rule);
+    }
+  }
+
+  return {
+    criticalCss: criticalRules.join(''),
+    deferredCss: deferredRules.join('')
+  };
+}
+
+/**
+ * 判断CSS规则是否为关键规则
+ */
+function isCriticalRule(rule) {
+  const criticalPatterns = [
+    /^\s*body\b/,
+    /^\s*html\b/,
+    /^\s*\*\b/,
+    /\b(font|color|background)\s*:/,
+    /\b(display|position|width|height)\s*:/,
+    /\.(hero|banner|header|nav)\b/,
+    /@media\s*\([^)]*\)\s*{[^}]*}/
+  ];
+  
+  return criticalPatterns.some(pattern => pattern.test(rule));
 }
 
 /**
