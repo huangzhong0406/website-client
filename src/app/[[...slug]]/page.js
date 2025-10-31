@@ -38,7 +38,7 @@ export async function generateMetadata({params}) {
     }
 
     const tenant = await getTenantContext();
-    console.log("租户信息:", tenant);
+    console.log("租户信息:", JSON.stringify(tenant));
 
     // 预先获取接口数据，将 meta 字段映射给 Next.js Metadata
     const page = await getPageData(slug, tenant);
@@ -97,6 +97,9 @@ export default async function RenderedPage({params}) {
   let tenant;
   try {
     tenant = await getTenantContext();
+    if (!tenant?.id) {
+      throw new Response("Forbidden", {status: 403});
+    }
   } catch (error) {
     if (error instanceof TenantNotFoundError) {
       throw new Response("Forbidden", {status: 403});
@@ -180,4 +183,3 @@ export default async function RenderedPage({params}) {
     </>
   );
 }
-

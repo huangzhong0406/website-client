@@ -1,15 +1,15 @@
-import {cache} from "react";
-import {headers} from "next/headers";
-import {logError, logWarn} from "./logger";
+import { cache } from 'react';
+import { headers } from 'next/headers';
+import { logError, logWarn } from './logger';
 
 // 主域名配置，默认使用 xingguyun.cc，可通过环境变量覆盖
-const DEFAULT_PRIMARY_DOMAIN = (process.env.PRIMARY_DOMAIN ?? process.env.NEXT_PUBLIC_PRIMARY_DOMAIN ?? "xingguyun.cc").toLowerCase();
+const DEFAULT_PRIMARY_DOMAIN = (process.env.PRIMARY_DOMAIN ?? process.env.NEXT_PUBLIC_PRIMARY_DOMAIN ?? 'xingguyun.cc').toLowerCase();
 export const PRIMARY_DOMAIN = DEFAULT_PRIMARY_DOMAIN;
 
 export class TenantResolutionError extends Error {
   constructor(message, options) {
     super(message);
-    this.name = "TenantResolutionError";
+    this.name = 'TenantResolutionError';
     Object.assign(this, options);
   }
 }
@@ -17,7 +17,7 @@ export class TenantResolutionError extends Error {
 export class TenantNotFoundError extends TenantResolutionError {
   constructor(hostname, options) {
     super(`Tenant not found for host "${hostname}"`, options);
-    this.name = "TenantNotFoundError";
+    this.name = 'TenantNotFoundError';
     this.hostname = hostname;
   }
 }
@@ -28,10 +28,10 @@ export class TenantNotFoundError extends TenantResolutionError {
  */
 function getCloudflareEnv() {
   try {
-    const context = globalThis?.[Symbol.for("__cloudflare-context__")];
+    const context = globalThis?.[Symbol.for('__cloudflare-context__')];
     return context?.env ?? null;
   } catch (error) {
-    logWarn("Unable to access Cloudflare request context.", {error});
+    logWarn('Unable to access Cloudflare request context.', { error });
     return null;
   }
 }
@@ -42,15 +42,15 @@ function getCloudflareEnv() {
  */
 function getTenantsNamespace() {
   const env = getCloudflareEnv();
-  if (!env || typeof env.TENANTS?.get !== "function") {
-    if (process.env.NODE_ENV !== "production") {
+  if (!env || typeof env.TENANTS?.get !== 'function') {
+    if (process.env.NODE_ENV !== 'production') {
       const fallbackTenant = process.env.DEFAULT_TENANT_ID ?? process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID ?? null;
       if (fallbackTenant) {
-        logWarn("KV binding TENANTS not available, using fallback tenant id from env.");
+        logWarn('KV binding TENANTS not available, using fallback tenant id from env.');
         return fallbackTenant;
       }
     }
-    logError("Cloudflare KV namespace TENANTS is not configured.");
+    logError('Cloudflare KV namespace TENANTS is not configured.');
     return null;
   }
   return env.TENANTS;
@@ -71,7 +71,7 @@ async function readTenantIdByKeys(namespace, keys, metadata = {}) {
         return value;
       }
     } catch (error) {
-      logError("Failed to read tenant id from KV.", {...metadata, key, error});
+      logError('Failed to read tenant id from KV.', { ...metadata, key, error });
     }
   }
 
@@ -83,19 +83,19 @@ async function readTenantIdByKeys(namespace, keys, metadata = {}) {
  */
 async function readTenantIdFromKv(hostname) {
   const namespaceOrFallback = getTenantsNamespace();
-  if (typeof namespaceOrFallback === "string") {
+  if (typeof namespaceOrFallback === 'string') {
     return namespaceOrFallback;
   }
 
   const namespace = namespaceOrFallback;
-  return readTenantIdByKeys(namespace, [`host:${hostname}`], {hostname});
+  return readTenantIdByKeys(namespace, [`host:${hostname}`], { hostname });
 }
 
 /**
  * 统一处理 host 字段，去除端口并转为小写。
  */
 function normalizeHost(hostname) {
-  return hostname.replace(/:\d+$/, "").trim().toLowerCase();
+  return hostname.replace(/:\d+$/, '').trim().toLowerCase();
 }
 
 /**
@@ -103,24 +103,24 @@ function normalizeHost(hostname) {
  * 不存在合法租户时抛出 TenantNotFoundError。
  */
 export async function resolveTenantForHost(hostname) {
-  const normalizedHost = normalizeHost(hostname.split(":")[0]);
-  console.log("解析租户域名，Host:", normalizedHost);
+  const normalizedHost = normalizeHost(hostname.split(':')[0]);
+  console.log('解析租户域名，Host:', normalizedHost);
 
   const directTenantId = await readTenantIdFromKv(normalizedHost);
-  console.log("directTenantId", directTenantId);
+  console.log('directTenantId', directTenantId);
 
   if (directTenantId) {
     return {
       id: directTenantId,
-      host: normalizedHost
+      host: normalizedHost,
     };
   }
 
-    // 忽略本地开发环境
-  if (normalizedHost === "localhost" || normalizedHost.endsWith(`.${PRIMARY_DOMAIN}`)) {
+  // 忽略本地开发环境
+  if (normalizedHost === 'localhost' || normalizedHost.endsWith(`.${PRIMARY_DOMAIN}`)) {
     return {
-      id: "00000000-0000-0000-0000-000000000001",
-      host: "localhost"
+      id: '00000000-0000-0000-0000-000000000001',
+      host: 'localhost',
     };
   }
 
@@ -132,10 +132,10 @@ export async function resolveTenantForHost(hostname) {
  */
 async function resolveTenantInternal() {
   const headersList = await headers();
-  const hostHeader = headersList.get("host");
+  const hostHeader = headersList.get('host');
 
   if (!hostHeader) {
-    throw new TenantResolutionError("Missing Host header.");
+    throw new TenantResolutionError('Missing Host header.');
   }
 
   return resolveTenantForHost(hostHeader);
