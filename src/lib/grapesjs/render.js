@@ -12,7 +12,7 @@ export function prepareGrapesContent({
   navigationData = null,
   currentSlug = "",
   globalComponents = null,
-  skipSanitization = false, // 是否跳过HTML清理(仅用于可信来源)
+  skipSanitization = false // 是否跳过HTML清理(仅用于可信来源)
 } = {}) {
   // 早期返回空内容
   if (!html) {
@@ -22,7 +22,7 @@ export function prepareGrapesContent({
       deferredCss: "",
       preloadResources: [],
       swiperScripts: [],
-      hasSwipers: false,
+      hasSwipers: false
     };
   }
 
@@ -38,7 +38,7 @@ export function prepareGrapesContent({
       deferredCss,
       preloadResources: [],
       swiperScripts: [],
-      hasSwipers: false,
+      hasSwipers: false
     };
   }
 
@@ -46,7 +46,7 @@ export function prepareGrapesContent({
   const $ = load(html, {
     decodeEntities: false,
     normalizeWhitespace: false,
-    xmlMode: false,
+    xmlMode: false
   });
 
   // 构建资源映射表(如果有资源)
@@ -55,6 +55,9 @@ export function prepareGrapesContent({
   // 收集需要预加载的资源
   const preloadResources = [];
 
+  // 分离页面CSS
+  const {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
+
   // 单次遍历处理所有动态内容
   processDynamicContent($, {
     globalComponents,
@@ -62,7 +65,7 @@ export function prepareGrapesContent({
     navigationData,
     currentSlug,
     assetMap,
-    preloadResources,
+    preloadResources
   });
 
   // 处理Swiper组件优化
@@ -71,18 +74,14 @@ export function prepareGrapesContent({
   // 提取Swiper脚本
   const swiperScripts = hasSwipers ? extractSwiperScripts($) : [];
 
-  const normalizedHtml = $.root().html() || "";
+  const body = $("body");
+  const normalizedHtml = body.length > 0 ? body.html() || "" : $.root().html() || "";
 
-  // 分离页面CSS
-  const {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
+  console.log("normalizedHtml:", normalizedHtml);
 
   // 合并Swiper关键CSS（如果页面包含Swiper）
   const swiperCriticalCss = hasSwipers ? getSwiperCriticalCss() : "";
   const criticalCss = swiperCriticalCss ? pageCriticalCss + "\n" + swiperCriticalCss : pageCriticalCss;
-
-  console.log("prepareGrapesContent preloadResources:", preloadResources);
-  console.log("prepareGrapesContent hasSwipers:", hasSwipers);
-  console.log("prepareGrapesContent swiperScripts count:", swiperScripts.length);
 
   return {
     html: normalizedHtml,
@@ -90,7 +89,7 @@ export function prepareGrapesContent({
     deferredCss,
     preloadResources,
     swiperScripts,
-    hasSwipers,
+    hasSwipers
   };
 }
 
@@ -142,7 +141,7 @@ function processDynamicContent($, {globalComponents, productData, navigationData
           href: src,
           as: "image",
           type: getImageType(src),
-          fetchPriority: "high",
+          fetchPriority: "high"
         });
         lcpAssigned = true;
 
@@ -161,7 +160,8 @@ function processDynamicContent($, {globalComponents, productData, navigationData
  * 如果页面中不存在全局组件,则自动注入
  */
 function injectGlobalComponents($, globalComponents) {
-  if (!globalComponents || typeof globalComponents !== "object") {
+  console.log("准备注入全局组件:", globalComponents);
+  if (!globalComponents?.length) {
     return;
   }
 
@@ -172,29 +172,33 @@ function injectGlobalComponents($, globalComponents) {
   const hasNavigation = $('[data-component-type="tailwind-navbar"]').length > 0;
   const hasFooter = $('[data-component-type="tailwind-footer"]').length > 0;
 
-  console.log("检查是否存在导航栏组件:", hasNavigation);
-  console.log(globalComponents.navigation);
+  // console.log("检查是否存在导航栏组件:", hasNavigation);
+  // console.log(globalComponents.navigation);
 
   // 注入全局导航 - 没有的话就插入，有的话就替换第一个
-  if (globalComponents.navigation?.html) {
-    if (hasNavigation) {
-      $('[data-component-type="tailwind-navbar"]').first().replaceWith(globalComponents.navigation.html);
-    } else {
-      root.prepend(globalComponents.navigation.html);
+  globalComponents.forEach((com) => {
+    if (com.type == "header" && com.json_data?.html) {
+      console.log("检查是否存在导航栏组件:", hasNavigation);
+      if (hasNavigation) {
+        $('[data-component-type="tailwind-navbar"]').first().replaceWith(com.json_data.html);
+      } else {
+        root.prepend(com.json_data.html);
+        root.prepend(`<style data-critical="true">${com.json_data.css}</style>`);
+      }
+      logWarn("已自动注入全局导航组件");
     }
-    logWarn("已自动注入全局导航组件");
-  }
 
-  // 注入全局页脚 - 没有的话就插入，有的话就替换第一个
-  console.log("检查是否存在页脚组件:", hasFooter);
-  if (globalComponents.footer?.html) {
-    if (hasFooter) {
-      $('[data-component-type="tailwind-footer"]').first().replaceWith(globalComponents.footer.html);
-    } else {
-      root.append(globalComponents.footer.html);
+    // 注入全局页脚 - 没有的话就插入，有的话就替换第一个
+    // console.log("检查是否存在页脚组件:", hasFooter);
+    if (com.type == "footer" && com.json_data?.html) {
+      if (hasFooter) {
+        $('[data-component-type="tailwind-footer"]').first().replaceWith(com.json_data.html);
+      } else {
+        root.append(com.json_data.html);
+      }
+      logWarn("已自动注入全局页脚组件");
     }
-    logWarn("已自动注入全局页脚组件");
-  }
+  });
 }
 
 /**
@@ -473,7 +477,7 @@ function splitCss(css) {
 
   return {
     criticalCss: criticalRules.join(""),
-    deferredCss: deferredRules.join(""),
+    deferredCss: deferredRules.join("")
   };
 }
 
@@ -488,7 +492,7 @@ function isCriticalRule(rule) {
     /\b(font|color|background)\s*:/,
     /\b(display|position|width|height)\s*:/,
     /\.(hero|banner|header|nav)\b/,
-    /@media\s*\([^)]*\)\s*{[^}]*}/,
+    /@media\s*\([^)]*\)\s*{[^}]*}/
   ];
 
   return criticalPatterns.some((pattern) => pattern.test(rule));
@@ -508,7 +512,7 @@ function getImageType(src) {
     jpg: "image/jpeg",
     jpeg: "image/jpeg",
     gif: "image/gif",
-    svg: "image/svg+xml",
+    svg: "image/svg+xml"
   };
 
   return typeMap[ext] || "image/jpeg";
@@ -529,7 +533,7 @@ function extractSwiperScripts($) {
     if (scriptContent && (scriptContent.includes("Swiper") || scriptContent.includes("swiper"))) {
       scripts.push({
         content: scriptContent,
-        type: $script.attr("type") || "text/javascript",
+        type: $script.attr("type") || "text/javascript"
       });
 
       // 从HTML中移除脚本标签（稍后在客户端执行）
@@ -620,12 +624,12 @@ function processSwiperOptimization($, preloadResources) {
     {
       href: "https://cdn.jsdelivr.net/npm/swiper@11.0.5/swiper-bundle.min.css",
       as: "style",
-      type: "text/css",
+      type: "text/css"
     },
     {
       href: "https://cdn.jsdelivr.net/npm/swiper@11.0.5/swiper-bundle.min.js",
       as: "script",
-      type: "text/javascript",
+      type: "text/javascript"
     }
   );
 
@@ -658,7 +662,7 @@ function processSwiperOptimization($, preloadResources) {
           href: src,
           as: "image",
           type: getImageType(src),
-          fetchPriority: "high",
+          fetchPriority: "high"
         });
       }
       // 首屏Swiper的其他图片（前3张）- 预加载但不是最高优先级

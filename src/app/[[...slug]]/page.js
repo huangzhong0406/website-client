@@ -42,6 +42,7 @@ export async function generateMetadata({params}) {
 
     // 预先获取接口数据，将 meta 字段映射给 Next.js Metadata
     const page = await getPageData(slug, tenant);
+    console.log("获取接口数据:", page);
     const meta = page.meta ?? {};
 
     const robots = page.publishStatus === "published" ? meta.robots : {index: false, follow: false};
@@ -55,9 +56,9 @@ export async function generateMetadata({params}) {
         description: meta.ogDescription ?? meta.description ?? "",
         type: "website",
         url: meta.url ?? undefined,
-        images: meta.ogImage ? [].concat(meta.ogImage) : undefined,
+        images: meta.ogImage ? [].concat(meta.ogImage) : undefined
       },
-      alternates: meta.canonical ? {canonical: meta.canonical} : undefined,
+      alternates: meta.canonical ? {canonical: meta.canonical} : undefined
     };
   } catch (error) {
     if (error instanceof TenantNotFoundError) {
@@ -65,8 +66,8 @@ export async function generateMetadata({params}) {
         title: "访问被拒绝",
         robots: {
           index: false,
-          follow: false,
-        },
+          follow: false
+        }
       };
     }
 
@@ -75,8 +76,8 @@ export async function generateMetadata({params}) {
         title: "页面未找到",
         robots: {
           index: false,
-          follow: false,
-        },
+          follow: false
+        }
       };
     }
 
@@ -121,43 +122,22 @@ export default async function RenderedPage({params}) {
     throw error;
   }
 
-  // 检查需要哪些额外数据
-  const hasProductList = page.html?.includes('data-component-type="product-list"');
-  const hasGlobalNav = page.html?.includes('data-component-type="tailwind-navbar"');
+  let contentPage = {
+    html: page.page_json?.json_data.html || "",
+    css: page.page_json?.json_data.css || "",
+    assets: page.page_json?.json_data.assets || []
+  };
 
-  // 并行获取所有需要的数据
-  const [globalComponentsResult, productsResult, navigationResult] = await Promise.allSettled([
-    getGlobalComponents(tenant),
-    hasProductList ? getProductData(tenant) : Promise.resolve(null),
-    hasGlobalNav ? getNavigationData(tenant) : Promise.resolve(null),
-  ]);
-
-  // 处理结果，失败不影响页面渲染
-  const globalComponents = globalComponentsResult.status === "fulfilled" ? globalComponentsResult.value : null;
-  const products = productsResult.status === "fulfilled" ? productsResult.value : null;
-  const navigation = navigationResult.status === "fulfilled" ? navigationResult.value : null;
-
-  // 记录错误但不中断渲染
-  if (globalComponentsResult.status === "rejected") {
-    logError("全局组件服务发生错误。", {error: globalComponentsResult.reason, tenant});
-  }
-  if (productsResult.status === "rejected") {
-    logError("产品服务发生错误。", {error: productsResult.reason, tenant});
-  }
-  if (navigationResult.status === "rejected") {
-    logError("导航服务发生错误。", {error: navigationResult.reason, tenant});
-  }
+  let globalComponentsResult = page?.global_sections || [];
 
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
-    ...page,
-    productData: products, // 产品数据
-    navigationData: navigation, // 导航数据
-    currentSlug: page.slug,
-    globalComponents: globalComponents, // 全局组件
-    tenant,
+    ...contentPage,
+    productData: {}, // 产品数据
+    navigationData: {}, // 导航数据
+    currentSlug: "",
+    globalComponents: globalComponentsResult, // 全局组件
+    tenant
   });
-
-  console.log("RenderedPage swiperScripts count:", swiperScripts?.length || 0);
 
   return (
     <>
@@ -180,4 +160,3 @@ export default async function RenderedPage({params}) {
     </>
   );
 }
-

@@ -8,7 +8,7 @@ if (!API_BASE) {
 }
 
 // API Token：若后端需要鉴权，可在环境变量中配置
-const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN ?? process.env.API_TOKEN ?? process.env.RENDERER_API_TOKEN;
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN ?? process.env.API_TOKEN ?? process.env.RENDERER_API_TOKEN ?? "API_TOKEN";
 
 /**
  * 构造 API 请求地址，自动拼接查询参数，同时忽略空值。
@@ -91,12 +91,15 @@ export async function apiFetch(input, slug, init = {}) {
     },
     headers: {
       Accept: "application/json",
-      ...(API_TOKEN ? {API_TOKEN: `${API_TOKEN}`} : {}),
+      API_TOKEN: "API_TOKEN",
+      // ...(API_TOKEN ? {API_TOKEN: `${API_TOKEN}`} : {}),
       ...buildTenantHeaders(tenant),
       ...initHeaders
     },
     signal: controller.signal
   };
+
+  console.log("API 请求:", finalInit);
 
   try {
     const response = await fetch(input, finalInit);
