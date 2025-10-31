@@ -105,13 +105,7 @@ function normalizeHost(hostname) {
 export async function resolveTenantForHost(hostname) {
   const normalizedHost = normalizeHost(hostname.split(":")[0]);
   console.log("解析租户域名，Host:", normalizedHost);
-  // 忽略本地开发环境
-  if (normalizedHost === "localhost" || normalizedHost.endsWith(`.${PRIMARY_DOMAIN}`)) {
-    return {
-      id: "00000000-0000-0000-0000-000000000001",
-      host: "localhost"
-    };
-  }
+
   const directTenantId = await readTenantIdFromKv(normalizedHost);
   console.log("directTenantId", directTenantId);
 
@@ -119,6 +113,14 @@ export async function resolveTenantForHost(hostname) {
     return {
       id: directTenantId,
       host: normalizedHost
+    };
+  }
+
+    // 忽略本地开发环境
+  if (normalizedHost === "localhost" || normalizedHost.endsWith(`.${PRIMARY_DOMAIN}`)) {
+    return {
+      id: "00000000-0000-0000-0000-000000000001",
+      host: "localhost"
     };
   }
 
