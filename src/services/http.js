@@ -69,14 +69,7 @@ function buildCacheKey(slug, tenant) {
  * fetch 封装：添加通用请求头、租户标识、Cloudflare 缓存策略以及超时控制。
  */
 export async function apiFetch(input, slug, init = {}) {
-  const {
-    timeout: initTimeout,
-    tenant,
-    headers: initHeaders = {},
-    cf: initCf = {},
-    cache: initCache,
-    ...restInit
-  } = init;
+  const {timeout: initTimeout, tenant, headers: initHeaders = {}, cf: initCf = {}, cache: initCache, ...restInit} = init;
 
   const timeout = initTimeout ?? 8000; // 默认 8 秒超时时间
   const controller = new AbortController();
@@ -94,15 +87,15 @@ export async function apiFetch(input, slug, init = {}) {
       cacheEverything: true,
       cacheTtl: 600,
       cacheKey: buildCacheKey(slug, tenant),
-      ...initCf,
+      ...initCf
     },
     headers: {
       Accept: "application/json",
       ...(API_TOKEN ? {API_TOKEN: `${API_TOKEN}`} : {}),
       ...buildTenantHeaders(tenant),
-      ...initHeaders,
+      ...initHeaders
     },
-    signal: controller.signal,
+    signal: controller.signal
   };
 
   try {
