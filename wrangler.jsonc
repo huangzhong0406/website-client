@@ -15,13 +15,15 @@
 	"r2_buckets": [
 		{
 			"binding": "__OPEN_NEXT_CACHE_BUCKET",
-			"bucket_name": "sc-static"
+			"bucket_name": "sc-static",
+			"preview_bucket_name": "sc-static"
 		}
 	],
 	"kv_namespaces": [
 		{
 			"binding": "TENANTS",
-			"id": "7ea3b67927124be2bb54ee6630235af4"
+			"id": "7ea3b67927124be2bb54ee6630235af4",
+			"preview_id": "7ea3b67927124be2bb54ee6630235af4"
 		}
 	],
 	"observability": {
