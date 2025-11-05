@@ -12,10 +12,35 @@ import {apiFetch, buildApiUrl} from "./http.js";
 export async function fetchNavigationPages(tenant) {
   // 直接返回假数据，避免无效 API 调用
   void tenant;
-  return [
-    {slug: "home", title: "首页", path: "/", order: 0, showInNav: true},
-    {slug: "aboutus", title: "关于我们", path: "/aboutus", order: 1, showInNav: true},
-  ];
+  return {
+    items: [
+      {
+        id: "1",
+        label: "Home",
+        url: "/",
+        isCurrentPage: true
+      },
+      {
+        id: "2",
+        label: "Products",
+        url: "/products",
+        children: [
+          {id: "2-1", label: "Product 1", url: "/products/1"},
+          {id: "2-2", label: "Product 2", url: "/products/2"}
+        ]
+      },
+      {
+        id: "3",
+        label: "About",
+        url: "/about"
+      },
+      {
+        id: "4",
+        label: "Contact",
+        url: "/contact"
+      }
+    ]
+  };
 
   // 注释掉的真实 API 调用代码
   /*
@@ -77,7 +102,7 @@ export function getAdjacentPages(currentSlug, pages) {
   return {
     previous: currentIndex > 0 ? pages[currentIndex - 1] : null,
     next: currentIndex < pages.length - 1 ? pages[currentIndex + 1] : null,
-    current: pages[currentIndex] || null,
+    current: pages[currentIndex] || null
   };
 }
 
@@ -96,7 +121,7 @@ export function buildBreadcrumb(slug, pages) {
       breadcrumb.push({
         title: currentPage.title,
         path: currentPage.path,
-        slug: currentPage.slug,
+        slug: currentPage.slug
       });
     }
   }
@@ -124,6 +149,5 @@ export default {
   fetchNavigationPages,
   getAdjacentPages,
   buildBreadcrumb,
-  isActivePath,
+  isActivePath
 };
-

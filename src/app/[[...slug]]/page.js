@@ -133,11 +133,24 @@ export default async function RenderedPage({params}) {
 
   let globalComponentsResult = page?.global_sections || [];
 
+  // 获取导航数据（用于 X-Nav 组件）
+  let navigationData = {};
+  try {
+    navigationData = await getNavigationData(tenant);
+  } catch (error) {
+    logError("获取导航数据失败", {error});
+  }
+  
+  console.log("获取导航数据------", navigationData);
+
+  // 获取当前页面 slug 字符串
+  const currentSlug = slug.length > 0 ? `/${slug.join('/')}` : '/';
+
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
     ...contentPage,
     productData: {}, // 产品数据
-    navigationData: {}, // 导航数据
-    currentSlug: "",
+    navigationData: navigationData, // 导航数据
+    currentSlug: currentSlug, // 当前页面路径
     globalComponents: globalComponentsResult, // 全局组件
     tenant
   });

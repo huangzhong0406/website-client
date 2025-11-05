@@ -1,5 +1,6 @@
 import {load} from "cheerio";
 import {logWarn} from "../logger";
+import {generateMenuHtml, setCurrentPageByPath} from "../../utils/header/generateMenuHtml";
 
 // 关键 CSS 截断长度,超出部分将延迟注入
 const DEFAULT_CRITICAL_CSS_LIMIT = Number(process.env.CRITICAL_CSS_LIMIT ?? 4000);
@@ -77,7 +78,7 @@ export function prepareGrapesContent({
   const body = $("body");
   const normalizedHtml = body.length > 0 ? body.html() || "" : $.root().html() || "";
 
-  console.log("normalizedHtml:", normalizedHtml);
+  // console.log("normalizedHtml:", normalizedHtml);
 
   // 合并Swiper关键CSS（如果页面包含Swiper）
   const swiperCriticalCss = hasSwipers ? getSwiperCriticalCss() : "";
@@ -123,6 +124,11 @@ function processDynamicContent($, {globalComponents, productData, navigationData
     // 处理产品列表组件
     if (componentType === "product-list" && productData) {
       processProductListComponent($, $elem, productData);
+    }
+
+    // 处理 X-Nav 导航组件
+    else if (componentType === "x-nav" && navigationData) {
+      processGlobalHeaderComponent($, $elem, navigationData, currentSlug);
     }
 
     // // 处理全局导航组件
@@ -171,13 +177,37 @@ function injectGlobalComponents($, globalComponents) {
   // 检查是否已存在全局组件
   const hasNavigation = $('[data-component-type="tailwind-navbar"]').length > 0;
   const hasFooter = $('[data-component-type="tailwind-footer"]').length > 0;
+  const hasHeader = $('[data-component-type="header"]').length > 0;  // ✅ 新增：检查 Header 组件
 
-  // console.log("检查是否存在导航栏组件:", hasNavigation);
-  // console.log(globalComponents.navigation);
-
-  // 注入全局导航 - 没有的话就插入，有的话就替换第一个
+  // 注入全局组件
   globalComponents.forEach((com) => {
-    if (com.type == "header" && com.json_data?.html) {
+    // ✅ 新增：注入 Header 组件（新的头部系统）
+    if (com.type === "header" && com.json_data?.html) {
+      console.log("[Render] 检测到全局 Header 组件");
+
+      // 从 HTML 中生成导航数据（如果需要）
+      const $headerHtml = $(com.json_data.html);
+
+      if (hasHeader) {
+        // 如果页面已有 Header 占位符，替换它
+        $('[data-component-type="header"]').first().replaceWith($headerHtml);
+        console.log("[Render] 已替换页面中的 Header 占位符");
+      } else {
+        // 如果没有 Header，插入到页面顶部
+        root.prepend($headerHtml);
+        console.log("[Render] 已将 Header 插入到页面顶部");
+      }
+
+      // 注入 Header 样式
+      if (com.json_data.css) {
+        root.prepend(`<style data-critical="true" data-header-styles="true">${com.json_data.css}</style>`);
+      }
+
+      logWarn("已自动注入全局 Header 组件");
+    }
+
+    // 注入全局导航（旧的导航系统，保留兼容性）
+    if (com.type == "navigation" && com.json_data?.html) {
       console.log("检查是否存在导航栏组件:", hasNavigation);
       if (hasNavigation) {
         $('[data-component-type="tailwind-navbar"]').first().replaceWith(com.json_data.html);
@@ -189,7 +219,6 @@ function injectGlobalComponents($, globalComponents) {
     }
 
     // 注入全局页脚 - 没有的话就插入，有的话就替换第一个
-    // console.log("检查是否存在页脚组件:", hasFooter);
     if (com.type == "footer" && com.json_data?.html) {
       if (hasFooter) {
         $('[data-component-type="tailwind-footer"]').first().replaceWith(com.json_data.html);
@@ -724,4 +753,49 @@ export function getSwiperCriticalCss() {
   min-height: 300px;
 }
 `.trim();
+}
+
+/**
+ * 处理 X-Nav 导航组件
+ * @param {CheerioAPI} $ - Cheerio 实例
+ * @param {Cheerio} $nav - X-Nav 组件元素
+ * @param {Object} navigationData - 导航数据
+ * @param {string} currentSlug - 当前页面路径
+ */
+function processGlobalHeaderComponent($, $nav, navigationData, currentSlug) {
+  try {
+    // 查找菜单容器
+    const $menuContainer = $nav.find('.header-menu');
+    if ($menuContainer.length === 0) {
+      logWarn('[X-Nav] 未找到菜单容器 .header-menu');
+      return;
+    }
+
+    // 解析菜单数据（如果是 JSON 字符串）
+    let menuData = navigationData;
+    if (typeof navigationData === 'string') {
+      try {
+        menuData = JSON.parse(navigationData);
+      } catch (e) {
+        logWarn('[X-Nav] 菜单数据解析失败:', e);
+        return;
+      }
+    }
+
+    // 根据当前路径设置高亮
+    if (currentSlug) {
+      const currentPath = currentSlug.startsWith('/') ? currentSlug : `/${currentSlug}`;
+      menuData = setCurrentPageByPath(menuData, currentPath);
+    }
+
+    // 生成菜单 HTML
+    const menuHtml = generateMenuHtml(menuData.items || [], 0, currentSlug);
+
+    // 注入菜单
+    $menuContainer.html(menuHtml);
+
+    logWarn('[X-Nav] 菜单已成功注入');
+  } catch (error) {
+    logWarn('[X-Nav] 处理失败:', error);
+  }
 }
