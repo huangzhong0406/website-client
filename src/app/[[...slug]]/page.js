@@ -3,24 +3,12 @@ import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
 import SwiperLoader from "../../components/SwiperLoader";
 import {fetchPage, PageNotFoundError, PageServiceError} from "../../services/pages";
-import {fetchProducts} from "../../services/products";
-import {fetchNavigationPages} from "../../services/navigation";
-import {fetchAllGlobalComponents} from "../../services/globalComponents";
 import {prepareGrapesContent} from "../../lib/grapesjs/render";
 import {logError} from "../../lib/logger";
 import {getTenantContext, TenantNotFoundError, TenantResolutionError} from "../../lib/tenant";
 
 // 缓存页面数据，避免同一请求周期内重复访问接口
 const getPageData = cache(async (slugSegments, tenant) => fetchPage(slugSegments, tenant));
-
-// 缓存产品数据
-const getProductData = cache(async (tenant) => fetchProducts(tenant));
-
-// 缓存导航数据
-const getNavigationData = cache(async (tenant) => fetchNavigationPages(tenant));
-
-// 缓存全局组件数据
-const getGlobalComponents = cache(async (tenant) => fetchAllGlobalComponents(tenant));
 
 export const dynamicParams = true;
 
@@ -133,23 +121,12 @@ export default async function RenderedPage({params}) {
 
   let globalComponentsResult = page?.global_sections || [];
 
-  // 获取导航数据（用于 X-Nav 组件）
-  let navigationData = {};
-  try {
-    navigationData = await getNavigationData(tenant);
-  } catch (error) {
-    logError("获取导航数据失败", {error});
-  }
-  
-  console.log("获取导航数据------", navigationData);
-
   // 获取当前页面 slug 字符串
   const currentSlug = slug.length > 0 ? `/${slug.join('/')}` : '/';
 
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
     ...contentPage,
     productData: {}, // 产品数据
-    navigationData: navigationData, // 导航数据
     currentSlug: currentSlug, // 当前页面路径
     globalComponents: globalComponentsResult, // 全局组件
     tenant

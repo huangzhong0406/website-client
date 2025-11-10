@@ -1,0 +1,91 @@
+/**
+ * X-Nav Minimal Variant - 极简变体样式
+ * @version 2.0.0
+ * @description Minimal 变体专属样式，配合 x-nav-core.css 使用
+ */
+
+/* ==================== Minimal 变体容器 ==================== */
+
+.header-minimal {
+  border: none;
+  box-shadow: none;
+  border-bottom: 1px solid transparent;
+}
+
+/* ==================== 菜单项样式 ==================== */
+
+.header-minimal .header-menu-link,
+.header-minimal .header-menu-trigger {
+  background-color: transparent;
+  position: relative;
+}
+
+/* 下划线高亮效果 */
+.header-minimal .header-menu-link::after,
+.header-minimal .header-menu-trigger::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--header-padding-x);
+  right: var(--header-padding-x);
+  height: 2px;
+  background-color: var(--header-active-color);
+  transform: scaleX(0);
+  transition: transform var(--header-transition);
+}
+
+.header-minimal .header-menu-link:hover::after,
+.header-minimal .header-menu-trigger:hover::after {
+  transform: scaleX(1);
+}
+
+.header-minimal .header-menu-link[aria-current="page"]::after,
+.header-minimal .header-menu-trigger[aria-expanded="true"]::after {
+  transform: scaleX(1);
+}
+
+/* 移除背景色悬浮效果 */
+.header-minimal .header-menu-link:hover,
+.header-minimal .header-menu-trigger:hover {
+  background-color: transparent;
+}
+
+/* ==================== 子菜单样式 ==================== */
+
+.header-minimal .header-submenu {
+  border: 1px solid var(--header-border);
+  border-radius: 0.25rem;
+}
+
+/* 子菜单项不显示下划线 */
+.header-minimal .header-submenu .header-menu-link::after,
+.header-minimal .header-submenu .header-menu-trigger::after {
+  display: none;
+}
+
+.header-minimal .header-submenu .header-menu-link:hover,
+.header-minimal .header-submenu .header-menu-trigger:hover {
+  background-color: var(--header-hover-bg);
+}
+
+/* ==================== 箭头样式 ==================== */
+
+.header-minimal .header-arrow {
+  width: 0.875em;
+  height: 0.875em;
+}
+
+/* ==================== 响应式优化 ==================== */
+
+@media (max-width: 768px) {
+  /* 移动端移除下划线效果 */
+  .header-minimal .header-menu-link::after,
+  .header-minimal .header-menu-trigger::after {
+    display: none;
+  }
+
+  .header-minimal .header-menu-link:hover,
+  .header-minimal .header-menu-trigger:hover {
+    background-color: var(--header-hover-bg);
+  }
+}

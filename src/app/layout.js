@@ -52,23 +52,28 @@ export default function RootLayout({children}) {
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         {cdnOrigin && <link rel="dns-prefetch" href={cdnOrigin} />}
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        {/* 预连接CDN */}
-        {/* <link rel="preconnect" href="https://unpkg.com" crossOrigin="" /> */}
-        {/* 引入 Tailwind CSS 通过 CDN 方式加载  */}
-        {/* <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" /> */}
 
-        {/* X-Nav 导航组件样式 */}
-        <link rel="stylesheet" href="/styles/x-nav-core.css" />
-        <link rel="stylesheet" href="/styles/x-nav-classic.css" />
-        <link rel="stylesheet" href="/styles/x-nav-minimal.css" />
+        {/* Global-Header 导航组件样式 */}
+        <link rel="stylesheet" href="/styles/global-header-core.css" />
+        <link rel="stylesheet" href="/styles/global-header-classic.css" />
+        <link rel="stylesheet" href="/styles/global-header-minimal.css" />
+
+        {/* Product List Page 组件样式 */}
+        <link rel="stylesheet" href="/product-list-page-core.css" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
         {process.env.NODE_ENV === "development" && <SimplePerf />}
 
-        {/* X-Nav 导航组件脚本 */}
+        {/* Global-Header 导航组件脚本 */}
         <Script
-          src="/scripts/x-nav-core.js"
+          src="/scripts/global-header-core.js"
+          strategy="afterInteractive"
+        />
+
+        {/* Product List Page 组件脚本 */}
+        <Script
+          src="/product-list-page-core.js"
           strategy="afterInteractive"
         />
       </body>
