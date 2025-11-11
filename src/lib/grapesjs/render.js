@@ -137,7 +137,7 @@ function processDynamicContent($, {globalComponents, productData,  productListPa
     // 处理 Global-Header 导航组件（备用逻辑，主要逻辑已在 injectGlobalComponents 中处理）
     // 这里保留以防某些特殊情况下页面中有多个 header 组件
     else if (componentType === "global-header" && globalComponents) {
-      const navigationData = globalComponents.find((com) => com.type === "global-header")?.json_data?.menu_data;
+      const navigationData = globalComponents.find((com) => com.type === "global-header")?.json_data?.components?.menuData;
       if (navigationData) {
         // 检查该元素是否已处理过（避免重复处理）
         if (!$elem.attr('data-menu-processed')) {
@@ -218,11 +218,12 @@ function injectGlobalComponents($, globalComponents, currentSlug = '') {
       }
 
       // ✅ 新增：处理菜单数据（动态注入菜单项）
-      if (com.json_data.menu_data) {
+      let menuData = com.json_data.components?.menuData;
+      if (menuData) {
         const $nav = $('[data-component-type="global-header"]');
         if ($nav.length > 0) {
           console.log("[Render] 开始处理 Global-Header 菜单数据");
-          processGlobalHeaderComponent($, $nav.first(), com.json_data.menu_data, currentSlug);
+          processGlobalHeaderComponent($, $nav.first(), menuData, currentSlug);
         }
       }
 
