@@ -189,7 +189,8 @@ function injectGlobalComponents($, globalComponents, currentSlug = '') {
   const root = body.length > 0 ? body : $.root();
 
   // 检查是否已存在全局组件
-  const hasFooter = $('[data-component-type="tailwind-footer"]').length > 0;
+  const hasFooter = $('[data-component-type="global-footer"]').length > 0;
+  const hasGlobalFooter = $('[data-component-type="global-footer"]').length > 0;  // ✅ 检查 Global-Footer 组件
   const hasHeader = $('[data-component-type="global-header"]').length > 0;  // ✅ 检查 Global-Header 组件
 
   // 注入全局组件
@@ -237,12 +238,38 @@ function injectGlobalComponents($, globalComponents, currentSlug = '') {
 
     // 注入全局页脚 - 没有的话就插入，有的话就替换第一个
     if (com.type == "footer" && com.json_data?.html) {
+      // 旧版 tailwind-footer（向后兼容）
       if (hasFooter) {
-        $('[data-component-type="tailwind-footer"]').first().replaceWith(com.json_data.html);
-      } else {
+        $('[data-component-type="global-footer"]').first().replaceWith(com.json_data.html);
+      } else if (!hasGlobalFooter) {
+        // 如果没有新版 global-footer，才插入旧版
         root.append(com.json_data.html);
       }
       logWarn("已自动注入全局页脚组件");
+    }
+
+    // ✅ 注入 Global-Footer 组件（新的页脚系统）
+    if (com.type === "global-footer" && com.json_data?.html) {
+      console.log("[Render] 检测到全局 Global-Footer 组件");
+
+      const $footerHtml = $(com.json_data.html);
+
+      if (hasGlobalFooter) {
+        // 如果页面已有 Footer 占位符，替换它
+        $('[data-component-type="global-footer"]').first().replaceWith($footerHtml);
+        console.log("[Render] 已替换页面中的 Global-Footer 占位符");
+      } else {
+        // 如果没有 Footer，插入到页面底部
+        root.append($footerHtml);
+        console.log("[Render] 已将 Global-Footer 插入到页面底部");
+      }
+
+      // 注入 Footer 样式
+      if (com.json_data.css) {
+        root.prepend(`<style data-critical="true" data-global-footer-styles="true">${com.json_data.css}</style>`);
+      }
+
+      logWarn("已自动注入全局 Global-Footer 组件");
     }
   });
 }
