@@ -60,22 +60,21 @@ export default function RootLayout({children}) {
 
         {/* Product List Page 组件样式 */}
         <link rel="stylesheet" href="/product-list-page-core.css" />
+        {/* Product List Page 组件样式 */}
+        <link rel="stylesheet" href="/product-list-detail-core.css" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
         {process.env.NODE_ENV === "development" && <SimplePerf />}
 
         {/* Global-Header 导航组件脚本 */}
-        <Script
-          src="/scripts/global-header-core.js"
-          strategy="afterInteractive"
-        />
+        <Script src="/scripts/global-header-core.js" strategy="afterInteractive" />
 
         {/* Product List Page 组件脚本 */}
-        <Script
-          src="/product-list-page-core.js"
-          strategy="afterInteractive"
-        />
+        <Script src="/product-list-page-core.js" strategy="afterInteractive" />
+
+        {/* Product List Page 组件脚本 */}
+        <Script src="/product-list-detail-core.js" strategy="afterInteractive" />
       </body>
     </html>
   );
