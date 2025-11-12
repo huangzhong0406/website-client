@@ -67,14 +67,12 @@ export function processProductListPageComponent($, $elem, productListPageData, c
     const $paginationContainer = $elem.find('.plp-pagination-wrapper');
     if ($paginationContainer.length > 0) {
       const paginationHtml = generatePagination(pagination, currentParams);
-      $paginationContainer.html(paginationHtml);
+      // 注入分页器和产品数量
+      const resultsCountHtml = `
+          <span class="plp-results-count">共 <strong>${pagination.total_items || 0}</strong> 件产品</span>
+      `;
+      $paginationContainer.html(paginationHtml + resultsCountHtml);
       logWarn('[ProductListPage] Pagination injected');
-    }
-
-    // 4. 更新结果计数
-    const $resultsCount = $elem.find('.plp-results-count strong');
-    if ($resultsCount.length > 0 && pagination.total_items) {
-      $resultsCount.text(pagination.total_items);
     }
 
     // 5. 设置排序下拉框当前值
