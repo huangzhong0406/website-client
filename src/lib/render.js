@@ -9,6 +9,7 @@ import {buildAssetMap, enhanceImage, isHeroCandidate, getImageType} from "./rend
 import {processSwiperOptimization, extractSwiperScripts} from "./render/swiperProcessor.js";
 import {injectGlobalComponents} from "./render/globalComponentsInjector.js";
 import {processProductListPageComponent} from "./render/productListPageProcessor.js";
+import {processProductListDetailComponent} from "./render/productListDetailProcessor.js";
 import {processGlobalHeaderComponent} from "./render/headerProcessor.js";
 
 /**
@@ -137,6 +138,11 @@ function processDynamicContent($, {globalComponents, productData, productListPag
     // 处理产品列表页组件
     if (componentType === "product-list-page" && productListPageData) {
       processProductListPageComponent($, $elem, productListPageData, currentSlug, currentParams);
+    }
+
+    // 处理产品列表详情组件
+    else if (componentType === "product-list-detail" && productListPageData) {
+      processProductListDetailComponent($, $elem, productListPageData, currentParams);
     }
 
     // 处理 Global-Header 导航组件（备用逻辑，主要逻辑已在 injectGlobalComponents 中处理）
