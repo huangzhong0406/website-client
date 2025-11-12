@@ -15,8 +15,11 @@ function escapeHtml(text) {
 
 /**
  * Generate product grid HTML
+ * @param {Array} products - Product array
+ * @param {Object} config - Configuration object
+ * @param {boolean} showDescription - Whether to show product description
  */
-export function generateProductGrid(products, config = {}) {
+export function generateProductGrid(products, config = {}, showDescription = true) {
   if (!products || products.length === 0) {
     return `
       <div class="plp-products-empty">
@@ -36,7 +39,7 @@ export function generateProductGrid(products, config = {}) {
   return `
     <div class="plp-products-grid ${colClasses}">
       ${products.map(product => `
-        <div class="plp-product-card" data-product-id="${escapeHtml(product.id)}">
+        <a href="${escapeHtml(product.path || '#')}" class="plp-product-card" data-product-id="${escapeHtml(product.id)}">
           <div class="plp-product-image-wrapper">
             <img
               src="${escapeHtml(product.image || '/placeholder.jpg')}"
@@ -47,13 +50,9 @@ export function generateProductGrid(products, config = {}) {
           </div>
           <div class="plp-product-info">
             <h3 class="plp-product-name">${escapeHtml(product.name)}</h3>
-            ${product.description ? `<p class="plp-product-description">${escapeHtml(product.description)}</p>` : ''}
-            <div class="plp-product-price">¥${(product.price || 0).toFixed(2)}</div>
-            <button class="plp-product-button" data-product-id="${escapeHtml(product.id)}">
-              查看详情
-            </button>
+            ${showDescription && product.description ? `<p class="plp-product-description">${escapeHtml(product.description)}</p>` : ''}
           </div>
-        </div>
+        </a>
       `).join('')}
     </div>
   `;
@@ -61,8 +60,10 @@ export function generateProductGrid(products, config = {}) {
 
 /**
  * Generate product list HTML
+ * @param {Array} products - Product array
+ * @param {boolean} showDescription - Whether to show product description
  */
-export function generateProductList(products) {
+export function generateProductList(products, showDescription = true) {
   if (!products || products.length === 0) {
     return `
       <div class="plp-products-empty">
@@ -79,7 +80,7 @@ export function generateProductList(products) {
   return `
     <div class="plp-products-list-view">
       ${products.map(product => `
-        <div class="plp-product-list-item" data-product-id="${escapeHtml(product.id)}">
+        <a href="${escapeHtml(product.path || '#')}" class="plp-product-list-item" data-product-id="${escapeHtml(product.id)}">
           <div class="plp-product-list-image">
             <img
               src="${escapeHtml(product.image || '/placeholder.jpg')}"
@@ -89,15 +90,9 @@ export function generateProductList(products) {
           </div>
           <div class="plp-product-list-content">
             <h3 class="plp-product-list-name">${escapeHtml(product.name)}</h3>
-            <p class="plp-product-list-description">${escapeHtml(product.description || '暂无描述')}</p>
-            <div class="plp-product-list-footer">
-              <div class="plp-product-list-price">¥${(product.price || 0).toFixed(2)}</div>
-              <button class="plp-product-list-button" data-product-id="${escapeHtml(product.id)}">
-                查看详情
-              </button>
-            </div>
+            ${showDescription && product.description ? `<p class="plp-product-list-description">${escapeHtml(product.description)}</p>` : ''}
           </div>
-        </div>
+        </a>
       `).join('')}
     </div>
   `;

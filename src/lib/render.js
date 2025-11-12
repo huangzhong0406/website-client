@@ -1,9 +1,9 @@
 import {load} from "cheerio";
-import {logWarn} from "../logger";
-import {generateMenuHtml, setCurrentPageByPath, validateMenuData} from "../../utils/xnav/generateMenuHtml";
-import {generateCategoryTree} from "../../utils/productlist/generateCategoryTree";
-import {generateProductGrid, generateProductList} from "../../utils/productlist/generateProductGrid";
-import {generatePagination} from "../../utils/productlist/generatePagination";
+import {logWarn} from "./logger";
+import {generateMenuHtml, setCurrentPageByPath, validateMenuData} from "../utils/xnav/generateMenuHtml";
+import {generateCategoryTree} from "../utils/productlist/generateCategoryTree";
+import {generateProductGrid, generateProductList} from "../utils/productlist/generateProductGrid";
+import {generatePagination} from "../utils/productlist/generatePagination";
 
 // 关键 CSS 截断长度,超出部分将延迟注入
 const DEFAULT_CRITICAL_CSS_LIMIT = Number(process.env.CRITICAL_CSS_LIMIT ?? 4000);
@@ -16,6 +16,7 @@ export function prepareGrapesContent({
   currentSlug = "",
   globalComponents = null,
   productListPageData = null, // 新增：产品列表页数据
+  currentParams = {},  // 新增：当前 URL 参数
   skipSanitization = false // 是否跳过HTML清理(仅用于可信来源)
 } = {}) {
   // 早期返回空内容
@@ -60,7 +61,7 @@ export function prepareGrapesContent({
   const preloadResources = [];
 
   // 分离页面CSS
-  const {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
+  const { criticalCss: pageCriticalCss, deferredCss } = splitCss(css);  
 
   // 单次遍历处理所有动态内容
   processDynamicContent($, {
@@ -68,6 +69,7 @@ export function prepareGrapesContent({
     productData,
     productListPageData,
     currentSlug,
+    currentParams,
     assetMap,
     preloadResources
   });
@@ -110,7 +112,7 @@ function buildAssetMap(assets) {
  * 单次遍历处理所有动态内容
  * 优化策略:先注入全局组件,然后单次遍历处理所有需要的元素
  */
-function processDynamicContent($, {globalComponents, productData,  productListPageData, currentSlug, assetMap, preloadResources}) {
+function processDynamicContent($, {globalComponents, productData,  productListPageData, currentSlug, currentParams, assetMap, preloadResources}) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
     injectGlobalComponents($, globalComponents, currentSlug);
@@ -131,7 +133,7 @@ function processDynamicContent($, {globalComponents, productData,  productListPa
 
     // 处理产品列表页组件（新组件）
     else if (componentType === "product-list-page" && productListPageData) {
-      processProductListPageComponent($, $elem, productListPageData);
+      processProductListPageComponent($, $elem, productListPageData, currentSlug, currentParams);
     }
 
     // 处理 Global-Header 导航组件（备用逻辑，主要逻辑已在 injectGlobalComponents 中处理）
@@ -869,8 +871,10 @@ function processGlobalHeaderComponent($, $nav, navigationData, currentSlug) {
  * @param {CheerioAPI} $ - Cheerio instance
  * @param {Cheerio} $elem - Component element
  * @param {Object} productListPageData - Product list page data containing categories, products, pagination
+ * @param {string} currentSlug - 当前页面路径（用于高亮当前分类）
+ * @param {Object} currentParams - 当前 URL 参数（用于生成分页链接）
  */
-function processProductListPageComponent($, $elem, productListPageData) {
+function processProductListPageComponent($, $elem, productListPageData, currentSlug = '', currentParams = {}) {
   try {
     // 解析组件配置
     const configStr = $elem.attr('data-config');
@@ -886,12 +890,19 @@ function processProductListPageComponent($, $elem, productListPageData) {
 
     // 获取布局变体
     const variant = $elem.attr('data-variant') || config.displayMode || 'grid';
+    
+    console.log("产品列表页配置",config);
 
-    // 1. 注入分类树 (如果显示分类)
+    // 获取配置选项
+    const defaultExpandCategories = config.defaultExpandCategories !== false; // 默认展开
+    const showProductDescription = config.showProductDescription !== false; // 默认显示描述
+
+    // 1. 注入分类树 (如果显示分类，传递 currentSlug 用于高亮)
     if (config.showCategories !== false) {
       const $categoriesContainer = $elem.find('.plp-categories');
       if ($categoriesContainer.length > 0 && categories.length > 0) {
-        const categoriesHtml = generateCategoryTree(categories, 0, null);
+        // 使用 currentSlug 作为"全部"分类的路径和高亮判断依据，传递 defaultExpandCategories 配置
+        const categoriesHtml = generateCategoryTree(categories, 0, currentSlug, currentSlug, defaultExpandCategories);
         $categoriesContainer.html(categoriesHtml);
         logWarn('[ProductListPage] Categories injected:', categories.length);
       }
@@ -902,18 +913,18 @@ function processProductListPageComponent($, $elem, productListPageData) {
     if ($productsContainer.length > 0) {
       let productsHtml;
       if (variant === 'list') {
-        productsHtml = generateProductList(products);
+        productsHtml = generateProductList(products, showProductDescription);
       } else {
-        productsHtml = generateProductGrid(products, config);
+        productsHtml = generateProductGrid(products, config, showProductDescription);
       }
       $productsContainer.html(productsHtml);
       logWarn('[ProductListPage] Products injected:', products.length);
     }
 
-    // 3. 注入分页器
+    // 3. 注入分页器（传递 currentParams 用于保留 sort 等参数）
     const $paginationContainer = $elem.find('.plp-pagination-wrapper');
-    if ($paginationContainer.length > 0 && pagination.total_pages > 1) {
-      const paginationHtml = generatePagination(pagination);
+    if ($paginationContainer.length > 0) {
+      const paginationHtml = generatePagination(pagination, currentParams);
       $paginationContainer.html(paginationHtml);
       logWarn('[ProductListPage] Pagination injected');
     }
@@ -924,10 +935,14 @@ function processProductListPageComponent($, $elem, productListPageData) {
       $resultsCount.text(pagination.total_items);
     }
 
-    // 5. 添加数据属性用于客户端hydration
-    $elem.attr('data-categories', JSON.stringify(categories));
-    $elem.attr('data-initial-products', JSON.stringify(products));
-    $elem.attr('data-pagination', JSON.stringify(pagination));
+    // 5. 设置排序下拉框当前值
+    if (currentParams.sort) {
+      const $sortSelect = $elem.find('.plp-sort-select');
+      if ($sortSelect.length > 0) {
+        $sortSelect.attr('data-current-sort', currentParams.sort);
+        // 注意：select 的 value 需要在客户端 JS 中设置
+      }
+    }
 
     logWarn('[ProductListPage] Component processed successfully');
   } catch (error) {

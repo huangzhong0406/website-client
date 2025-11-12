@@ -123,3 +123,163 @@ async function safeReadJson(response) {
     return null;
   }
 }
+
+/**
+ * 获取产品列表页数据（包括分类、产品、分页）
+ * @param {Object} options - 查询选项
+ * @param {string} options.path - 当前页面路径（如 '/electronics' 或 '/shop'）
+ * @param {number} options.page - 页码（默认 1）
+ * @param {string} options.sort - 排序方式（默认 'name-asc'）
+ * @param {number} options.limit - 每页数量（默认 12）
+ * @param {Object} options.tenant - 租户信息
+ * @returns {Promise<Object>} 产品列表数据 {categories, products, pagination}
+ */
+export async function fetchProductListPageData({ path, page = 1, sort = "name-asc", limit = 12, tenant }) {
+  // ============ 测试假数据 ============
+  // TODO: 替换为真实 API 调用
+
+  // 生成测试产品数据
+  const generateMockProducts = (page, limit) => {
+    const products = [];
+    const start = (page - 1) * limit;
+    for (let i = 0; i < limit; i++) {
+      const id = start + i + 1;
+      products.push({
+        id: `prod-${id}`,
+        name: `测试产品 ${id}`,
+        description: `这是产品 ${id} 的描述信息，展示产品的主要特点和功能。`,
+        price: 99 + id * 10,
+        image: `https://via.placeholder.com/300x300?text=Product+${id}`,
+        category_id: 'cat-1',
+        path: `/products/prod-${id}`  // 产品详情页路径
+      });
+    }
+    return products;
+  };
+
+  // 模拟分类树数据
+  const mockCategories = [
+    {
+      id: 'cat-1',
+      name: '电子产品',
+      path: '/electronics',
+      parent_id: null,
+      children: [
+        {
+          id: 'cat-1-1',
+          name: '手机',
+          path: '/electronics/phones',
+          parent_id: 'cat-1',
+          children: []
+        },
+        {
+          id: 'cat-1-2',
+          name: '电脑',
+          path: '/electronics/computers',
+          parent_id: 'cat-1',
+          children: []
+        }
+      ]
+    },
+    {
+      id: 'cat-2',
+      name: '服装',
+      path: '/clothing',
+      parent_id: null,
+      children: [
+        {
+          id: 'cat-2-1',
+          name: '男装',
+          path: '/clothing/men',
+          parent_id: 'cat-2',
+          children: []
+        },
+        {
+          id: 'cat-2-2',
+          name: '女装',
+          path: '/clothing/women',
+          parent_id: 'cat-2',
+          children: []
+        }
+      ]
+    },
+    {
+      id: 'cat-3',
+      name: '家居',
+      path: '/home',
+      parent_id: null,
+      children: []
+    }
+  ];
+
+  // 模拟总产品数（用于分页）
+  const mockTotalProducts = 48;
+  const totalPages = Math.ceil(mockTotalProducts / limit);
+
+  // 返回测试数据
+  return {
+    categories: mockCategories,
+    products: generateMockProducts(page, limit),
+    pagination: {
+      current_page: page,
+      total_pages: totalPages,
+      total_items: mockTotalProducts,
+      per_page: limit,
+      has_next: page < totalPages,
+      has_prev: page > 1
+    }
+  };
+
+  // ============ 真实 API 调用代码（当前被注释） ============
+
+
+  // 构建查询参数
+  const params = new URLSearchParams({
+    path: path || "/",
+    page: page.toString(),
+    sort,
+    limit: limit.toString()
+  });
+
+  const url = buildApiUrl(`/api/renderer/products?${params}`);
+  console.log("获取产品列表数据，path:", path, "url:", url);
+
+  let response;
+  try {
+    response = await apiFetch(url, path, {
+      tenant,
+      next: {
+        revalidate: Number.isFinite(DEFAULT_REVALIDATE_SECONDS) && DEFAULT_REVALIDATE_SECONDS > 0 ? DEFAULT_REVALIDATE_SECONDS : 0,
+        tags: [`products:${path}:${page}:${sort}`]
+      }
+    });
+  } catch (error) {
+    logError("产品列表接口请求失败", {error, path, tenant});
+    throw new PageServiceError("Failed to fetch product list data.", {cause: error, tenant, path});
+  }
+
+  if (!response.ok) {
+    const errorData = await safeReadJson(response);
+    logError("产品列表接口返回异常响应。", {
+      status: response.status,
+      payload: errorData,
+      path,
+      tenant
+    });
+    throw new PageServiceError("Product list API responded with an error.", {
+      status: response.status,
+      payload: errorData,
+      path,
+      tenant
+    });
+  }
+
+  const data = await safeReadJson(response);
+
+  if (!data || typeof data !== "object") {
+    throw new PageServiceError("Invalid response from product list API.", {path, tenant});
+  }
+
+  // 返回产品列表数据
+  return data.data || data;
+}

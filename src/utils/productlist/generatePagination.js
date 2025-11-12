@@ -21,8 +21,10 @@ function calculatePages(currentPage, totalPages) {
 
 /**
  * Generate pagination HTML
+ * @param {Object} pagination - 分页信息
+ * @param {Object} currentParams - 当前 URL 参数（用于保留 sort 等参数）
  */
-export function generatePagination(pagination) {
+export function generatePagination(pagination, currentParams = {}) {
   if (!pagination || pagination.total_pages <= 1) {
     return '';
   }
@@ -30,46 +32,89 @@ export function generatePagination(pagination) {
   const { current_page, total_pages } = pagination;
   const pages = calculatePages(current_page, total_pages);
 
+  // 构建分页 URL（保留其他参数，如 sort）
+  const buildPageUrl = (page) => {
+    const params = new URLSearchParams(currentParams);
+    if (page === 1) {
+      params.delete('page');  // 第一页不显示 page 参数
+    } else {
+      params.set('page', page);
+    }
+    const query = params.toString();
+    return query ? `?${query}` : '';
+  };
+
   return `
     <nav class="plp-pagination" aria-label="产品分页导航">
-      <button
-        class="plp-pagination-button plp-pagination-prev"
-        data-page="${current_page - 1}"
-        ${current_page === 1 ? 'disabled' : ''}
-        aria-label="上一页"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-      </button>
+      ${current_page > 1 ? `
+        <a
+          href="${buildPageUrl(current_page - 1)}"
+          class="plp-pagination-button plp-pagination-prev"
+          aria-label="上一页"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+      ` : `
+        <span
+          class="plp-pagination-button plp-pagination-prev"
+          aria-disabled="true"
+          aria-label="上一页"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </span>
+      `}
 
       <div class="plp-pagination-pages">
         ${pages.map(page => {
           if (page === '...') {
             return '<span class="plp-pagination-ellipsis">...</span>';
           }
+          if (page === current_page) {
+            return `
+              <span
+                class="plp-pagination-button plp-pagination-number active"
+                aria-current="page"
+              >
+                ${page}
+              </span>
+            `;
+          }
           return `
-            <button
-              class="plp-pagination-button plp-pagination-number ${page === current_page ? 'active' : ''}"
-              data-page="${page}"
-              ${page === current_page ? 'aria-current="page"' : ''}
+            <a
+              href="${buildPageUrl(page)}"
+              class="plp-pagination-button plp-pagination-number"
             >
               ${page}
-            </button>
+            </a>
           `;
         }).join('')}
       </div>
 
-      <button
-        class="plp-pagination-button plp-pagination-next"
-        data-page="${current_page + 1}"
-        ${current_page === total_pages ? 'disabled' : ''}
-        aria-label="下一页"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-      </button>
+      ${current_page < total_pages ? `
+        <a
+          href="${buildPageUrl(current_page + 1)}"
+          class="plp-pagination-button plp-pagination-next"
+          aria-label="下一页"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+      ` : `
+        <span
+          class="plp-pagination-button plp-pagination-next"
+          aria-disabled="true"
+          aria-label="下一页"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </span>
+      `}
     </nav>
   `;
 }
