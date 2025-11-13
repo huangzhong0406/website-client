@@ -1,0 +1,391 @@
+/* 产品详情组件核心样式 */
+.pd-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* 第一部分：产品展示区（固定垂直布局） */
+.pd-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+/* 产品图片轮播 */
+.pd-gallery-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pd-gallery-main {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.pd-gallery-main .swiper-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pd-gallery-main img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+.pd-gallery-thumbs {
+  display: flex;
+  gap: 10px;
+}
+
+.pd-gallery-thumbs .swiper-slide {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pd-gallery-thumbs .swiper-slide:hover,
+.pd-gallery-thumbs .swiper-slide-thumb-active {
+  opacity: 1;
+}
+
+.pd-gallery-thumbs .thumb-item {
+  width: 100%;
+  height: 100%;
+}
+
+.pd-gallery-thumbs img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.pd-no-images {
+  padding: 60px 20px;
+  text-align: center;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  color: #999;
+}
+
+/* 产品信息 */
+.pd-info-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pd-title {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pd-brief-description {
+  color: #666;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.pd-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 0;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.contact-item span {
+  font-weight: bold;
+  min-width: 80px;
+  color: #333;
+}
+
+.contact-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.contact-item a:hover {
+  text-decoration: underline;
+}
+
+.pd-quote-btn {
+  padding: 12px 24px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  text-transform: uppercase;
+}
+
+.pd-quote-btn:hover {
+  background-color: #0056b3;
+}
+
+.pd-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pd-files h3 {
+  font-size: 16px;
+  margin: 0 0 10px 0;
+}
+
+.file-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  text-decoration: none;
+  color: #333;
+}
+
+.file-item:hover {
+  background-color: #e0e0e0;
+}
+
+.file-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+
+.file-name {
+  font-size: 14px;
+}
+
+/* 第二部分：产品描述标签页 */
+.pd-description-wrapper {
+  margin-bottom: 60px;
+}
+
+.pd-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.pd-tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.pd-tab:hover {
+  color: #333;
+}
+
+.pd-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.pd-tab-contents {
+  padding: 20px 0;
+}
+
+.pd-tab-content {
+  display: none;
+  line-height: 1.6;
+}
+
+.pd-tab-content.active {
+  display: block;
+}
+
+.pd-no-desc {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+/* 第三部分：相关产品 */
+.pd-related {
+  margin-top: 60px;
+}
+
+.pd-related h2 {
+  font-size: 28px;
+  margin-bottom: 30px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.pd-related-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 骨架图 */
+.skeleton-item {
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 相关产品卡片 */
+.related-product-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.related-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.related-product-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.related-product-card h3 {
+  padding: 15px;
+  font-size: 18px;
+  margin: 0;
+  flex: 1;
+}
+
+.view-more-btn {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  background-color: #f5f5f5;
+  color: #333;
+  text-decoration: none;
+  transition: background-color 0.3s;
+  font-weight: 500;
+}
+
+.view-more-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Swiper 按钮 */
+.pd-related-swiper {
+  padding: 0 40px;
+}
+
+.pd-related-swiper .swiper-button-next,
+.pd-related-swiper .swiper-button-prev {
+  color: #007bff;
+  width: 40px;
+  height: 40px;
+}
+
+.pd-related-swiper .swiper-button-next:after,
+.pd-related-swiper .swiper-button-prev:after {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .pd-container {
+    padding: 20px 15px;
+  }
+
+  .pd-main {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+
+  .pd-title {
+    font-size: 24px;
+  }
+
+  .pd-brief-description {
+    font-size: 14px;
+  }
+
+  .pd-related h2 {
+    font-size: 22px;
+  }
+
+  .pd-related-swiper {
+    padding: 0 30px;
+  }
+
+  .pd-tabs {
+    gap: 5px;
+  }
+
+  .pd-tab {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .pd-gallery-thumbs {
+    gap: 5px;
+  }
+}

@@ -11,6 +11,7 @@ import {injectGlobalComponents} from "./render/globalComponentsInjector.js";
 import {processProductListPageComponent} from "./render/productListPageProcessor.js";
 import {processProductListDetailComponent} from "./render/productListDetailProcessor.js";
 import {processGlobalHeaderComponent} from "./render/headerProcessor.js";
+import {processProductDetailComponent} from "./render/productDetailProcessor.js";
 
 /**
  * 准备 GrapesJS 内容用于渲染
@@ -34,6 +35,7 @@ export function prepareGrapesContent({
   currentSlug = "",
   globalComponents = null,
   productListPageData = null,
+  productDetailData = null,
   currentParams = {},
   skipSanitization = false
 } = {}) {
@@ -50,7 +52,7 @@ export function prepareGrapesContent({
   }
 
   // 检查是否需要处理动态内容
-  const needsProcessing = productData || globalComponents || productListPageData || assets.length > 0;
+  const needsProcessing = productData || globalComponents || productListPageData || productDetailData || assets.length > 0;
 
   if (!needsProcessing) {
     // 无需处理,直接返回
@@ -86,6 +88,7 @@ export function prepareGrapesContent({
     globalComponents,
     productData,
     productListPageData,
+    productDetailData,
     currentSlug,
     currentParams,
     assetMap,
@@ -121,7 +124,7 @@ export function prepareGrapesContent({
  * @param {CheerioAPI} $ - Cheerio 实例
  * @param {Object} options - 处理选项
  */
-function processDynamicContent($, {globalComponents, productData, productListPageData, currentSlug, currentParams, assetMap, preloadResources}) {
+function processDynamicContent($, {globalComponents, productData, productListPageData, productDetailData, currentSlug, currentParams, assetMap, preloadResources}) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
     injectGlobalComponents($, globalComponents, currentSlug);
@@ -143,6 +146,11 @@ function processDynamicContent($, {globalComponents, productData, productListPag
     // 处理产品列表详情组件
     else if (componentType === "product-list-detail" && productListPageData) {
       processProductListDetailComponent($, $elem, productListPageData, currentParams);
+    }
+
+    // 处理产品详情组件
+    else if (componentType === "product-detail" && productDetailData) {
+      processProductDetailComponent($, $elem, productDetailData);
     }
 
     // 处理 Global-Header 导航组件（备用逻辑，主要逻辑已在 injectGlobalComponents 中处理）

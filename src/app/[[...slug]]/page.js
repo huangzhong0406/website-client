@@ -2,7 +2,7 @@ import {cache} from "react";
 import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
 import SwiperLoader from "../../components/SwiperLoader";
-import {fetchPage, fetchProductListPageData, PageNotFoundError, PageServiceError} from "../../services/pages";
+import {fetchPage, fetchProductListPageData, fetchProductDetail, PageNotFoundError, PageServiceError} from "../../services/pages";
 import {prepareGrapesContent} from "../../lib/render";
 import {logError} from "../../lib/logger";
 import {getTenantContext, TenantNotFoundError, TenantResolutionError} from "../../lib/tenant";
@@ -128,7 +128,7 @@ export default async function RenderedPage({params, searchParams}) {
   // 判断是否是产品列表页，获取产品数据
   let productListPageData = null;
   // TODO：测试
-  page.page_type = "products";
+  page.page_type = "product_detail";
   if (page.page_type === 'products') {
     try {
       // 解析 URL 参数
@@ -150,10 +150,31 @@ export default async function RenderedPage({params, searchParams}) {
     }
   }
 
+  // 获取产品详情数据
+  let productDetailData = null;
+
+  // 优先使用页面数据中的 product_detail 字段（来自 API）
+  if (page.product_detail) {
+    productDetailData = page.product_detail;
+  }
+  // TODO：测试
+  // 如果页面类型是产品详情页但没有 product_detail 数据，使用测试数据
+  else if (page.page_type === "product_detail") {
+    try {
+      // 从 URL 中提取产品 ID（假设 URL 格式为 /products/prod-123）
+      const productId = slug.length > 1 ? slug[slug.length - 1] : "prod-1";
+      productDetailData = await fetchProductDetail(productId, tenant);
+    } catch (error) {
+      logError("获取产品详情数据失败。", {error, slug, tenant});
+      // 如果获取失败，继续渲染页面但不传递产品详情数据
+    }
+  }
+
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
     ...contentPage,
     productData: {}, // 产品数据（保留用于其他用途）
     productListPageData, // 产品列表页数据
+    productDetailData, // 产品详情数据
     currentSlug: currentSlug, // 当前页面路径
     currentParams: resolvedSearchParams, // URL 参数
     globalComponents: globalComponentsResult, // 全局组件

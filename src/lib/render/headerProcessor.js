@@ -4,7 +4,7 @@
  */
 
 import {logWarn} from "../logger.js";
-import {generateMenuHtml, setCurrentPageByPath, validateMenuData} from "../../utils/xnav/generateMenuHtml.js";
+import {generateMenuHtml, setCurrentPageByPath, validateMenuData} from "../../utils/header/generateMenuHtml.js";
 
 /**
  * 处理 Global-Header 导航组件
