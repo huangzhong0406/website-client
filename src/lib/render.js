@@ -39,17 +39,6 @@ export function prepareGrapesContent({
   currentParams = {},
   skipSanitization = false
 } = {}) {
-  // 早期返回空内容
-  if (!html) {
-    return {
-      html: "",
-      criticalCss: "",
-      deferredCss: "",
-      preloadResources: [],
-      swiperScripts: [],
-      hasSwipers: false
-    };
-  }
 
   // 检查是否需要处理动态内容
   const needsProcessing = productData || globalComponents || productListPageData || productDetailData || assets.length > 0;

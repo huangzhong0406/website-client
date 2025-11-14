@@ -26,9 +26,17 @@ export function processProductListPageComponent($, $elem, productListPageData, c
     } catch (e) {
       logWarn('[ProductListPage] Failed to parse config:', e);
     }
+    
+    console.log("--------productListPageData----------", productListPageData);
 
     // 获取数据
-    const { categories = [], products = [], pagination = {} } = productListPageData;
+    const categories = productListPageData.categories || [];
+    const pagination = {
+      page: productListPageData.products?.page,
+      size: productListPageData.products?.size,
+      total: productListPageData.products?.total
+    };
+    const products = productListPageData.products?.list || [];
 
     // 获取布局变体
     const variant = $elem.attr('data-variant') || config.displayMode || 'grid';
@@ -69,7 +77,7 @@ export function processProductListPageComponent($, $elem, productListPageData, c
       const paginationHtml = generatePagination(pagination, currentParams);
       // 注入分页器和产品数量
       const resultsCountHtml = `
-          <span class="plp-results-count">共 <strong>${pagination.total_items || 0}</strong> 件产品</span>
+          <span class="plp-results-count">共 <strong>${pagination.total || 0}</strong> 件产品</span>
       `;
       $paginationContainer.html(paginationHtml + resultsCountHtml);
       logWarn('[ProductListPage] Pagination injected');

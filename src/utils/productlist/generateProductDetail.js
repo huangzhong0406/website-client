@@ -20,6 +20,7 @@ function escapeHtml(text) {
  * @param {boolean} showDescription - Whether to show product description
  */
 export function generateProductDetailGrid(products, config = {}, showDescription = true) {
+  console.log("产品列表", products);
   if (!products || products.length === 0) {
     return `
       <div class="pld-products-empty">

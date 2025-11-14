@@ -26,7 +26,6 @@ function escapeHtml(text) {
  * @returns {string} Category tree HTML
  */
 export function generateCategoryTree(categories, level = 0, currentPath = null, rootPath = null, defaultExpanded = true) {
-  console.log("产品分类", categories);
   if (!categories || categories.length === 0) {
     return '<p class="plp-categories-empty">暂无分类</p>';
   }

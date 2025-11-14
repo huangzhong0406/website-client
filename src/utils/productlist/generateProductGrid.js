@@ -20,6 +20,7 @@ function escapeHtml(text) {
  * @param {boolean} showDescription - Whether to show product description
  */
 export function generateProductGrid(products, config = {}, showDescription = true) {
+  console.log("产品列表", products);
   if (!products || products.length === 0) {
     return `
       <div class="plp-products-empty">
@@ -38,11 +39,13 @@ export function generateProductGrid(products, config = {}, showDescription = tru
 
   return `
     <div class="plp-products-grid ${colClasses}">
-      ${products.map(product => `
-        <a href="${escapeHtml(product.path || '#')}" class="plp-product-card" data-product-id="${escapeHtml(product.id)}">
+      ${products
+        .map(
+          (product) => `
+        <a href="${escapeHtml(product.path || "#")}" class="plp-product-card" data-product-id="${escapeHtml(product.id)}">
           <div class="plp-product-image-wrapper">
             <img
-              src="${escapeHtml(product.image || '/placeholder.jpg')}"
+              src="${escapeHtml(product.primary_image || "/placeholder.jpg")}"
               alt="${escapeHtml(product.name)}"
               class="plp-product-image"
               loading="lazy"
@@ -50,10 +53,12 @@ export function generateProductGrid(products, config = {}, showDescription = tru
           </div>
           <div class="plp-product-info">
             <h3 class="plp-product-name">${escapeHtml(product.name)}</h3>
-            ${showDescription && product.description ? `<p class="plp-product-description">${escapeHtml(product.description)}</p>` : ''}
+            ${showDescription && product.summary ? `<p class="plp-product-description">${escapeHtml(product.summary)}</p>` : ""}
           </div>
         </a>
-      `).join('')}
+      `
+        )
+        .join("")}
     </div>
   `;
 }
@@ -79,21 +84,25 @@ export function generateProductList(products, showDescription = true) {
 
   return `
     <div class="plp-products-list-view">
-      ${products.map(product => `
-        <a href="${escapeHtml(product.path || '#')}" class="plp-product-list-item" data-product-id="${escapeHtml(product.id)}">
+      ${products
+        .map(
+          (product) => `
+        <a href="${escapeHtml(product.path || "#")}" class="plp-product-list-item" data-product-id="${escapeHtml(product.id)}">
           <div class="plp-product-list-image">
             <img
-              src="${escapeHtml(product.image || '/placeholder.jpg')}"
+              src="${escapeHtml(product.primary_image || "/placeholder.jpg")}"
               alt="${escapeHtml(product.name)}"
               loading="lazy"
             />
           </div>
           <div class="plp-product-list-content">
             <h3 class="plp-product-list-name">${escapeHtml(product.name)}</h3>
-            ${showDescription && product.description ? `<p class="plp-product-list-description">${escapeHtml(product.description)}</p>` : ''}
+            ${showDescription && product.summary ? `<p class="plp-product-list-description">${escapeHtml(product.summary)}</p>` : ""}
           </div>
         </a>
-      `).join('')}
+      `
+        )
+        .join("")}
     </div>
   `;
 }

@@ -11,9 +11,9 @@ function calculatePages(currentPage, totalPages) {
   const rangeStart = Math.max(2, currentPage - 1);
   const rangeEnd = Math.min(totalPages - 1, currentPage + 1);
 
-  if (rangeStart > 2) pages.push('...');
+  if (rangeStart > 2) pages.push("...");
   for (let i = rangeStart; i <= rangeEnd; i++) pages.push(i);
-  if (rangeEnd < totalPages - 1) pages.push('...');
+  if (rangeEnd < totalPages - 1) pages.push("...");
   if (totalPages > 1) pages.push(totalPages);
 
   return pages;
@@ -25,30 +25,28 @@ function calculatePages(currentPage, totalPages) {
  * @param {Object} currentParams - 当前 URL 参数（用于保留 sort 等参数）
  */
 export function generatePagination(pagination, currentParams = {}) {
-  if (!pagination || pagination.total_pages <= 1) {
-    return '';
+  if (!pagination || pagination.total <= 1) {
+    return "";
   }
 
-  const { current_page, total_pages } = pagination;
-  const pages = calculatePages(current_page, total_pages);
+  const {page, total} = pagination;
+  const pages = calculatePages(page, total);
 
   // 构建分页 URL（保留其他参数，如 sort）
   const buildPageUrl = (page) => {
     const params = new URLSearchParams(currentParams);
-    if (page === 1) {
-      params.delete('page');  // 第一页不显示 page 参数
-    } else {
-      params.set('page', page);
-    }
+    params.set("page", page);
     const query = params.toString();
-    return query ? `?${query}` : '';
+    return query ? `?${query}` : "";
   };
 
   return `
     <nav class="plp-pagination" aria-label="产品分页导航">
-      ${current_page > 1 ? `
+      ${
+        page > 1
+          ? `
         <a
-          href="${buildPageUrl(current_page - 1)}"
+          href="${buildPageUrl(page - 1)}"
           class="plp-pagination-button plp-pagination-prev"
           aria-label="上一页"
         >
@@ -56,7 +54,8 @@ export function generatePagination(pagination, currentParams = {}) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </a>
-      ` : `
+      `
+          : `
         <span
           class="plp-pagination-button plp-pagination-prev"
           aria-disabled="true"
@@ -66,37 +65,42 @@ export function generatePagination(pagination, currentParams = {}) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </span>
-      `}
+      `
+      }
 
       <div class="plp-pagination-pages">
-        ${pages.map(page => {
-          if (page === '...') {
-            return '<span class="plp-pagination-ellipsis">...</span>';
-          }
-          if (page === current_page) {
-            return `
+        ${pages
+          .map((item) => {
+            if (item === "...") {
+              return '<span class="plp-pagination-ellipsis">...</span>';
+            }
+            if (item === page) {
+              return `
               <span
                 class="plp-pagination-button plp-pagination-number active"
                 aria-current="page"
               >
-                ${page}
+                ${item}
               </span>
             `;
-          }
-          return `
+            }
+            return `
             <a
-              href="${buildPageUrl(page)}"
+              href="${buildPageUrl(item)}"
               class="plp-pagination-button plp-pagination-number"
             >
-              ${page}
+              ${item}
             </a>
           `;
-        }).join('')}
+          })
+          .join("")}
       </div>
 
-      ${current_page < total_pages ? `
+      ${
+        page < total
+          ? `
         <a
-          href="${buildPageUrl(current_page + 1)}"
+          href="${buildPageUrl(page + 1)}"
           class="plp-pagination-button plp-pagination-next"
           aria-label="下一页"
         >
@@ -104,7 +108,8 @@ export function generatePagination(pagination, currentParams = {}) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </a>
-      ` : `
+      `
+          : `
         <span
           class="plp-pagination-button plp-pagination-next"
           aria-disabled="true"
@@ -114,7 +119,8 @@ export function generatePagination(pagination, currentParams = {}) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </span>
-      `}
+      `
+      }
     </nav>
   `;
 }

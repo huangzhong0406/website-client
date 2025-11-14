@@ -9,6 +9,7 @@ import {getTenantContext, TenantNotFoundError, TenantResolutionError} from "../.
 
 // 缓存页面数据，避免同一请求周期内重复访问接口
 const getPageData = cache(async (slugSegments, tenant) => fetchPage(slugSegments, tenant));
+const getProductsData = cache(async (slugSegments, tenant) => fetchProductListPageData(slugSegments, tenant));
 
 export const dynamicParams = true;
 
@@ -121,27 +122,39 @@ export default async function RenderedPage({params, searchParams}) {
   };
 
   let globalComponentsResult = page?.global_sections || [];
+  console.log("globalComponentsResult", globalComponentsResult);
 
   // 获取当前页面 slug 字符串
-  const currentSlug = slug.length > 0 ? `/${slug.join('/')}` : '/';
+  const currentSlug = slug.length > 0 ? `/${slug.join("/")}` : "/";
 
   // 判断是否是产品列表页，获取产品数据
   let productListPageData = null;
-  // TODO：测试
-  page.page_type = "product_detail";
-  if (page.page_type === 'products') {
+
+  page.page_type = "product_category"; // TODO：测试
+
+  if (page.page_type === "product_category") {
     try {
       // 解析 URL 参数
       const pageNum = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page) : 1;
-      const sort = resolvedSearchParams.sort || 'name-asc';
-      const limit = resolvedSearchParams.limit ? parseInt(resolvedSearchParams.limit) : 12;
+      const size = resolvedSearchParams.size ? parseInt(resolvedSearchParams.size) : 12;
+      const sort_by = ["name-asc", "name-desc"].includes(resolvedSearchParams.sort)
+        ? "name"
+        : ["date-asc", "date-desc"].includes(resolvedSearchParams.sort)
+        ? "created_at"
+        : "";
+      const sort_order = ["name-asc", "date-asc"].includes(resolvedSearchParams.sort)
+        ? "asc"
+        : ["name-desc", "date-desc"].includes(resolvedSearchParams.sort)
+        ? "desc"
+        : "";
 
       // 获取产品列表数据
       productListPageData = await fetchProductListPageData({
         path: currentSlug,
         page: pageNum,
-        sort,
-        limit,
+        sort_by,
+        sort_order,
+        size,
         tenant
       });
     } catch (error) {

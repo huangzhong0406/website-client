@@ -124,124 +124,18 @@ async function safeReadJson(response) {
   }
 }
 
-/**
- * 获取产品列表页数据（包括分类、产品、分页）
- * @param {Object} options - 查询选项
- * @param {string} options.path - 当前页面路径（如 '/electronics' 或 '/shop'）
- * @param {number} options.page - 页码（默认 1）
- * @param {string} options.sort - 排序方式（默认 'name-asc'）
- * @param {number} options.limit - 每页数量（默认 12）
- * @param {Object} options.tenant - 租户信息
- * @returns {Promise<Object>} 产品列表数据 {categories, products, pagination}
- */
-export async function fetchProductListPageData({ path, page = 1, sort = "name-asc", limit = 12, tenant }) {
-  // ============ 测试假数据 ============
-  // TODO: 替换为真实 API 调用
-
-  // 生成测试产品数据
-  const generateMockProducts = (page, limit) => {
-    const products = [];
-    const start = (page - 1) * limit;
-    for (let i = 0; i < limit; i++) {
-      const id = start + i + 1;
-      products.push({
-        id: `prod-${id}`,
-        name: `测试产品 ${id}`,
-        description: `这是产品 ${id} 的描述信息，展示产品的主要特点和功能。`,
-        price: 99 + id * 10,
-        image: `https://shopsource.singoo.cc/sections/images/800_800.jpg`,
-        category_id: "cat-1",
-        path: `/products/prod-${id}` // 产品详情页路径
-      });
-    }
-    return products;
-  };
-
-  // 模拟分类树数据
-  const mockCategories = [
-    {
-      id: 'cat-1',
-      name: '电子产品',
-      path: '/electronics',
-      parent_id: null,
-      children: [
-        {
-          id: 'cat-1-1',
-          name: '手机',
-          path: '/electronics/phones',
-          parent_id: 'cat-1',
-          children: []
-        },
-        {
-          id: 'cat-1-2',
-          name: '电脑',
-          path: '/electronics/computers',
-          parent_id: 'cat-1',
-          children: []
-        }
-      ]
-    },
-    {
-      id: 'cat-2',
-      name: '服装',
-      path: '/clothing',
-      parent_id: null,
-      children: [
-        {
-          id: 'cat-2-1',
-          name: '男装',
-          path: '/clothing/men',
-          parent_id: 'cat-2',
-          children: []
-        },
-        {
-          id: 'cat-2-2',
-          name: '女装',
-          path: '/clothing/women',
-          parent_id: 'cat-2',
-          children: []
-        }
-      ]
-    },
-    {
-      id: 'cat-3',
-      name: '家居',
-      path: '/home',
-      parent_id: null,
-      children: []
-    }
-  ];
-
-  // 模拟总产品数（用于分页）
-  const mockTotalProducts = 48;
-  const totalPages = Math.ceil(mockTotalProducts / limit);
-
-  // 返回测试数据
-  return {
-    categories: mockCategories,
-    products: generateMockProducts(page, limit),
-    pagination: {
-      current_page: page,
-      total_pages: totalPages,
-      total_items: mockTotalProducts,
-      per_page: limit,
-      has_next: page < totalPages,
-      has_prev: page > 1
-    }
-  };
-
-  // ============ 真实 API 调用代码（当前被注释） ============
-
-
+// 获取产品列表页数据（包括分类、产品、分页）
+export async function fetchProductListPageData({path, page, sort_by, sort_order, size, tenant}) {
   // 构建查询参数
   const params = new URLSearchParams({
-    path: path || "/",
-    page: page.toString(),
-    sort,
-    limit: limit.toString()
+    category_id: "",
+    sort_by,
+    sort_order,
+    page,
+    size: size
   });
 
-  const url = buildApiUrl(`/api/renderer/products?${params}`);
+  const url = buildApiUrl(`/api/module/product-categories?${params}`);
   console.log("获取产品列表数据，path:", path, "url:", url);
 
   let response;
@@ -250,7 +144,7 @@ export async function fetchProductListPageData({ path, page = 1, sort = "name-as
       tenant,
       next: {
         revalidate: Number.isFinite(DEFAULT_REVALIDATE_SECONDS) && DEFAULT_REVALIDATE_SECONDS > 0 ? DEFAULT_REVALIDATE_SECONDS : 0,
-        tags: [`products:${path}:${page}:${sort}`]
+        tags: [`products:${path}`]
       }
     });
   } catch (error) {
@@ -296,38 +190,38 @@ export async function fetchProductDetail(productId, tenant) {
 
   // 模拟产品详情数据
   const mockProductDetail = {
-    id: productId || 'prod-1',
-    title: `测试产品 ${productId || '1'} - 完整标题`,
-    description: '这是一款优质的产品，具有出色的性能和可靠的质量。适用于各种应用场景，满足您的多样化需求。',
+    id: productId || "prod-1",
+    title: `测试产品 ${productId || "1"} - 完整标题`,
+    description: "这是一款优质的产品，具有出色的性能和可靠的质量。适用于各种应用场景，满足您的多样化需求。",
     images: [
-      'https://shopsource.singoo.cc/sections/images/800_800.jpg',
-      'https://shopsource.singoo.cc/sections/images/800_800.jpg',
-      'https://shopsource.singoo.cc/sections/images/800_800.jpg',
-      'https://shopsource.singoo.cc/sections/images/800_800.jpg',
-      'https://shopsource.singoo.cc/sections/images/800_800.jpg'
+      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
+      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
+      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
+      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
+      "https://shopsource.singoo.cc/sections/images/800_800.jpg"
     ],
     contact: {
-      email: 'sales@example.com',
-      phone: '+86 400-123-4567',
-      whatsapp: '+86 138-1234-5678'
+      email: "sales@example.com",
+      phone: "+86 400-123-4567",
+      whatsapp: "+86 138-1234-5678"
     },
     files: [
       {
-        name: '产品目录.pdf',
-        url: '#catalog.pdf'
+        name: "产品目录.pdf",
+        url: "#catalog.pdf"
       },
       {
-        name: '技术规格书.pdf',
-        url: '#specification.pdf'
+        name: "技术规格书.pdf",
+        url: "#specification.pdf"
       },
       {
-        name: '用户手册.pdf',
-        url: '#manual.pdf'
+        name: "用户手册.pdf",
+        url: "#manual.pdf"
       }
     ],
     descriptions: [
       {
-        title: '产品特性',
+        title: "产品特性",
         content: `
           <div style="padding: 20px;">
             <h3 style="margin-bottom: 15px;">主要特性</h3>
@@ -342,7 +236,7 @@ export async function fetchProductDetail(productId, tenant) {
         `
       },
       {
-        title: '技术参数',
+        title: "技术参数",
         content: `
           <div style="padding: 20px;">
             <h3 style="margin-bottom: 15px;">详细参数</h3>
@@ -372,7 +266,7 @@ export async function fetchProductDetail(productId, tenant) {
         `
       },
       {
-        title: '包装清单',
+        title: "包装清单",
         content: `
           <div style="padding: 20px;">
             <h3 style="margin-bottom: 15px;">包装内容</h3>
@@ -388,7 +282,7 @@ export async function fetchProductDetail(productId, tenant) {
         `
       },
       {
-        title: '售后服务',
+        title: "售后服务",
         content: `
           <div style="padding: 20px;">
             <h3 style="margin-bottom: 15px;">服务承诺</h3>
