@@ -44,7 +44,7 @@ export function prepareGrapesContent({
 
   if (!needsProcessing) {
     // 无需处理,直接返回
-    const {criticalCss, deferredCss} = splitCss(css);
+    let {criticalCss, deferredCss} = splitCss(css);
     return {
       html,
       criticalCss,
@@ -67,6 +67,14 @@ export function prepareGrapesContent({
 
   // 收集需要预加载的资源
   const preloadResources = [];
+
+  // 组合css
+  globalComponents.forEach((com) => {
+    let comCss = com.json_data?.css || "";
+    if (com.type != "header") {
+      css += comCss;
+    }
+  });
 
   // 分离页面 CSS
   let {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
@@ -95,14 +103,8 @@ export function prepareGrapesContent({
   // 合并 Swiper 关键 CSS（如果页面包含 Swiper）
   const swiperCriticalCss = hasSwipers ? getSwiperCriticalCss() : "";
   let criticalCss = swiperCriticalCss ? pageCriticalCss + "\n" + swiperCriticalCss : pageCriticalCss;
-  globalComponents.forEach((com) => {
-    let comCss = com.json_data?.css || "";
-    if (com.type == "header") {
-      criticalCss = comCss + criticalCss;
-    } else {
-      deferredCss += comCss;
-    }
-  });
+  let headerCss = globalComponents.find((com) => com.type == "header")?.json_data?.css || "";
+  criticalCss = headerCss + criticalCss;
 
   return {
     html: normalizedHtml,
