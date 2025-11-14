@@ -168,7 +168,7 @@ export default async function RenderedPage({params, searchParams}) {
 
   // 优先使用页面数据中的 product_detail 字段（来自 API）
   if (page.product_detail) {
-    productDetailData = page.product_detail;
+    productDetailData = page.context.resource;
   }
   // TODO：测试
   // 如果页面类型是产品详情页但没有 product_detail 数据，使用测试数据

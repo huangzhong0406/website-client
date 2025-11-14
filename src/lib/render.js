@@ -39,7 +39,6 @@ export function prepareGrapesContent({
   currentParams = {},
   skipSanitization = false
 } = {}) {
-
   // 检查是否需要处理动态内容
   const needsProcessing = productData || globalComponents || productListPageData || productDetailData || assets.length > 0;
 
@@ -70,7 +69,7 @@ export function prepareGrapesContent({
   const preloadResources = [];
 
   // 分离页面 CSS
-  const {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
+  let {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
 
   // 单次遍历处理所有动态内容
   processDynamicContent($, {
@@ -95,7 +94,15 @@ export function prepareGrapesContent({
 
   // 合并 Swiper 关键 CSS（如果页面包含 Swiper）
   const swiperCriticalCss = hasSwipers ? getSwiperCriticalCss() : "";
-  const criticalCss = swiperCriticalCss ? pageCriticalCss + "\n" + swiperCriticalCss : pageCriticalCss;
+  let criticalCss = swiperCriticalCss ? pageCriticalCss + "\n" + swiperCriticalCss : pageCriticalCss;
+  globalComponents.forEach((com) => {
+    let comCss = com.json_data?.css || "";
+    if (com.type == "header") {
+      criticalCss = comCss + criticalCss;
+    } else {
+      deferredCss += comCss;
+    }
+  });
 
   return {
     html: normalizedHtml,
@@ -113,7 +120,10 @@ export function prepareGrapesContent({
  * @param {CheerioAPI} $ - Cheerio 实例
  * @param {Object} options - 处理选项
  */
-function processDynamicContent($, {globalComponents, productData, productListPageData, productDetailData, currentSlug, currentParams, assetMap, preloadResources}) {
+function processDynamicContent(
+  $,
+  {globalComponents, productData, productListPageData, productDetailData, currentSlug, currentParams, assetMap, preloadResources}
+) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
     injectGlobalComponents($, globalComponents, currentSlug);

@@ -26,7 +26,12 @@ export function processProductListDetailComponent($, $elem, productListData, cur
     }
 
     // 获取数据
-    const { products = [], pagination = {} } = productListData;
+    const pagination = {
+      page: productListData.products?.page,
+      size: productListData.products?.size,
+      total: productListData.products?.total
+    };
+    const products = productListData.products?.list || [];
 
     // 获取布局变体
     const variant = $elem.attr('data-variant') || config.displayMode || 'grid';
@@ -55,7 +60,7 @@ export function processProductListDetailComponent($, $elem, productListData, cur
       const paginationHtml = generatePagination(pagination, currentParams);
       // 注入分页器和产品数量
       const resultsCountHtml = `
-        <span class="pld-results-count">共 <strong>${pagination.total_items || 0}</strong> 件产品</span>
+        <span class="pld-results-count">共 <strong>${pagination.total || 0}</strong> 件产品</span>
       `;
       $paginationContainer.html(paginationHtml + resultsCountHtml);
       logWarn('[ProductListDetail] Pagination injected');

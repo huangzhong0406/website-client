@@ -12,11 +12,11 @@ import {generatePagination} from "../../utils/productlist/generatePagination.js"
  * 处理产品列表页组件 (Product List Page Component)
  * @param {CheerioAPI} $ - Cheerio instance
  * @param {Cheerio} $elem - Component element
- * @param {Object} productListPageData - Product list page data containing categories, products, pagination
+ * @param {Object} productListData - Product list page data containing categories, products, pagination
  * @param {string} currentSlug - 当前页面路径（用于高亮当前分类）
  * @param {Object} currentParams - 当前 URL 参数（用于生成分页链接）
  */
-export function processProductListPageComponent($, $elem, productListPageData, currentSlug = '', currentParams = {}) {
+export function processProductListPageComponent($, $elem, productListData, currentSlug = '', currentParams = {}) {
   try {
     // 解析组件配置
     const configStr = $elem.attr('data-config');
@@ -27,16 +27,16 @@ export function processProductListPageComponent($, $elem, productListPageData, c
       logWarn('[ProductListPage] Failed to parse config:', e);
     }
     
-    console.log("--------productListPageData----------", productListPageData);
+    console.log("--------productListData----------", productListData);
 
     // 获取数据
-    const categories = productListPageData.categories || [];
+    const categories = productListData.categories || [];
     const pagination = {
-      page: productListPageData.products?.page,
-      size: productListPageData.products?.size,
-      total: productListPageData.products?.total
+      page: productListData.products?.page,
+      size: productListData.products?.size,
+      total: productListData.products?.total
     };
-    const products = productListPageData.products?.list || [];
+    const products = productListData.products?.list || [];
 
     // 获取布局变体
     const variant = $elem.attr('data-variant') || config.displayMode || 'grid';

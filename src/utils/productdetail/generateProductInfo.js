@@ -5,17 +5,17 @@
  * @returns {string} HTML 字符串
  */
 export function generateProductInfoHtml(data, config = {}) {
-  const { title, description, contact = {}, files = [] } = data;
+  const { name, summary, contact = {}, files = [] } = data;
   const showFiles = config.showFiles !== false;
 
   return `
     <div class="pd-info-wrapper">
-      <h1 class="pd-title">${title || "Product Title"}</h1>
+      <h1 class="pd-name">${name || "Product Title"}</h1>
 
       ${
-        description
+        summary
           ? `
-        <div class="pd-brief-description">${description}</div>
+        <div class="pd-brief-summary">${summary}</div>
       `
           : ""
       }

@@ -39,11 +39,13 @@ export function generateProductDetailGrid(products, config = {}, showDescription
 
   return `
     <div class="pld-products-grid ${colClasses}">
-      ${products.map(product => `
-        <a href="${escapeHtml(product.path || '#')}" class="pld-product-card" data-product-id="${escapeHtml(product.id)}">
+      ${products
+        .map(
+          (product) => `
+        <a href="${escapeHtml(product.path || "#")}" class="pld-product-card" data-product-id="${escapeHtml(product.id)}">
           <div class="pld-product-image-wrapper">
             <img
-              src="${escapeHtml(product.image || '/placeholder.jpg')}"
+              src="${escapeHtml(product.primary_image || "/placeholder.jpg")}"
               alt="${escapeHtml(product.name)}"
               class="pld-product-image"
               loading="lazy"
@@ -51,10 +53,12 @@ export function generateProductDetailGrid(products, config = {}, showDescription
           </div>
           <div class="pld-product-info">
             <h3 class="pld-product-name">${escapeHtml(product.name)}</h3>
-            ${showDescription && product.description ? `<p class="pld-product-description">${escapeHtml(product.description)}</p>` : ''}
+            ${showDescription && product.summary ? `<p class="pld-product-description">${escapeHtml(product.summary)}</p>` : ""}
           </div>
         </a>
-      `).join('')}
+      `
+        )
+        .join("")}
     </div>
   `;
 }

@@ -18,10 +18,7 @@ export function processProductDetailComponent($, $elem, productDetailData) {
   const configStr = $elem.attr('data-config');
   const config = configStr ? JSON.parse(configStr) : {};
 
-  const {
-    id, title, description, images = [],
-    contact = {}, files = [], descriptions = []
-  } = productDetailData;
+  const {id, name, summary, images = [], contact = {}, files = [], contents = []} = productDetailData;
 
   // 1. 注入产品图片轮播
   const $gallery = $elem.find('.pd-gallery');
@@ -33,19 +30,14 @@ export function processProductDetailComponent($, $elem, productDetailData) {
   // 2. 注入产品信息
   const $info = $elem.find('.pd-info');
   if ($info.length > 0) {
-    const infoHtml = generateProductInfoHtml({
-      title,
-      description,
-      contact,
-      files
-    }, config);
+    const infoHtml = generateProductInfoHtml(productDetailData, config);
     $info.html(infoHtml);
   }
 
   // 3. 注入产品描述标签页
   const $description = $elem.find('.pd-description');
-  if ($description.length > 0 && descriptions.length > 0) {
-    const descriptionHtml = generateDescriptionTabsHtml(descriptions);
+  if ($description.length > 0 && contents.length > 0) {
+    const descriptionHtml = generateDescriptionTabsHtml(contents);
     $description.html(descriptionHtml);
   }
 
