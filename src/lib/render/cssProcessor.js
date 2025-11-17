@@ -62,51 +62,40 @@ function isCriticalRule(rule) {
     /\b(font|color|background)\s*:/,
     /\b(display|position|width|height)\s*:/,
     /\.(hero|banner|header|nav)\b/,
-    /@media\s*\([^)]*\)\s*{[^}]*}/
+    /@media\s*\([^)]*\)\s*{[^}]*}/,
+
+    // Swiper 关键样式 (防止 CLS)
+    /\.(gjs-)?swiper(-root|-wrapper|-slide)?\b/,
+    /\.swiper-container\b/,
+    /\.swiper-pagination\b/,
+    /\.swiper-button-(prev|next)\b/,
   ];
 
   return criticalPatterns.some((pattern) => pattern.test(rule));
 }
 
 /**
- * 获取 Swiper 的关键 CSS
- * 这些 CSS 确保即使 JS 未加载，轮播图的第一张也能正常显示
- * @returns {string}
+ * 提取 Swiper 相关的关键 CSS
+ * @param {string} css - 原始 CSS 字符串
+ * @returns {string} Swiper 关键 CSS
  */
-export function getSwiperCriticalCss() {
-  return `
-/* Swiper 关键CSS - 确保首屏轮播图可见 */
-.swiper {
-  position: relative;
-  overflow: hidden;
-}
+export function extractSwiperCriticalCss(css) {
+  if (!css) return '';
 
-.swiper-wrapper {
-  display: flex;
-  transition-property: transform;
-}
+  const swiperRules = [];
+  const rules = css.split(/(?<=})\s*(?=[.#@])/g).filter(Boolean);
 
-.swiper-slide {
-  flex-shrink: 0;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
+  for (const rule of rules) {
+    // 检查是否是 Swiper 相关规则
+    if (
+      rule.includes('.swiper') ||
+      rule.includes('gjs-swiper') ||
+      rule.includes('.swiper-pagination') ||
+      rule.includes('.swiper-button')
+    ) {
+      swiperRules.push(rule);
+    }
+  }
 
-/* 确保第一张图片始终可见（JS加载前的回退） */
-.swiper-wrapper > .swiper-slide:first-child {
-  display: block;
-}
-
-.swiper-slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 防止未初始化时的布局抖动 */
-.gjs-swiper-root {
-  min-height: 300px;
-}
-`.trim();
+  return swiperRules.join('');
 }

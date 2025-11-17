@@ -183,7 +183,7 @@ export default async function RenderedPage({params, searchParams}) {
     }
   }
 
-  const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers} = prepareGrapesContent({
+  const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers, hasAboveFoldSwiper} = prepareGrapesContent({
     ...contentPage,
     productData: {}, // 产品数据（保留用于其他用途）
     productListPageData, // 产品列表页数据
@@ -196,6 +196,14 @@ export default async function RenderedPage({params, searchParams}) {
 
   return (
     <>
+      {/* Swiper CDN 预连接（性能优化） */}
+      {hasSwipers && (
+        <>
+          <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+          <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        </>
+      )}
+
       {/* 预加载关键资源（包含 Swiper CSS/JS + 首屏图片） */}
       {preloadResources.map((resource, index) => (
         <link key={index} rel="preload" href={resource.href} as={resource.as} type={resource.type} fetchPriority={resource.fetchPriority} />
@@ -211,7 +219,7 @@ export default async function RenderedPage({params, searchParams}) {
       {deferredCss && <DeferredStyle css={deferredCss} id="page-deferred-css" />}
 
       {/* Swiper 初始化 - 动态加载和执行脚本 */}
-      {hasSwipers && <SwiperLoader scripts={swiperScripts} preloadSwiper={true} />}
+      {hasSwipers && <SwiperLoader scripts={swiperScripts} preloadSwiper={hasAboveFoldSwiper} />}
     </>
   );
 }

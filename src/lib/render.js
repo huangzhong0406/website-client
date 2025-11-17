@@ -4,14 +4,14 @@
  */
 
 import {load} from "cheerio";
-import {splitCss, getSwiperCriticalCss} from "./render/cssProcessor.js";
+import {splitCss} from "./render/cssProcessor.js";
 import {buildAssetMap, enhanceImage, isHeroCandidate, getImageType} from "./render/imageOptimizer.js";
-import {processSwiperOptimization, extractSwiperScripts} from "./render/swiperProcessor.js";
 import {injectGlobalComponents} from "./render/globalComponentsInjector.js";
 import {processProductListPageComponent} from "./render/productListPageProcessor.js";
 import {processProductListDetailComponent} from "./render/productListDetailProcessor.js";
 import {processGlobalHeaderComponent} from "./render/headerProcessor.js";
 import {processProductDetailComponent} from "./render/productDetailProcessor.js";
+import {processSwipers} from "./render/swiperProcessor.js";
 
 /**
  * 准备 GrapesJS 内容用于渲染
@@ -43,15 +43,21 @@ export function prepareGrapesContent({
   const needsProcessing = productData || globalComponents || productListPageData || productDetailData || assets.length > 0;
 
   if (!needsProcessing) {
-    // 无需处理,直接返回
+    // 无需处理,但仍需检查 Swiper
     let {criticalCss, deferredCss} = splitCss(css);
+
+    // 处理 Swiper 组件
+    const swiperResult = processSwipers(html);
+
     return {
-      html,
+      html: swiperResult.html,
       criticalCss,
       deferredCss,
       preloadResources: [],
-      swiperScripts: [],
-      hasSwipers: false
+      swiperScripts: swiperResult.swiperScripts,
+      hasSwipers: swiperResult.hasSwipers,
+      swiperCount: swiperResult.swiperCount,
+      hasAboveFoldSwiper: swiperResult.hasAboveFoldSwiper
     };
   }
 
@@ -91,28 +97,26 @@ export function prepareGrapesContent({
     preloadResources
   });
 
-  // 处理 Swiper 组件优化
-  const hasSwipers = processSwiperOptimization($, preloadResources);
-
-  // 提取 Swiper 脚本
-  const swiperScripts = hasSwipers ? extractSwiperScripts($) : [];
-
   const body = $("body");
-  const normalizedHtml = body.length > 0 ? body.html() || "" : $.root().html() || "";
+  let normalizedHtml = body.length > 0 ? body.html() || "" : $.root().html() || "";
 
-  // 合并 Swiper 关键 CSS（如果页面包含 Swiper）
-  const swiperCriticalCss = hasSwipers ? getSwiperCriticalCss() : "";
-  let criticalCss = swiperCriticalCss ? pageCriticalCss + "\n" + swiperCriticalCss : pageCriticalCss;
+  let criticalCss = pageCriticalCss;
   let headerCss = globalComponents.find((com) => com.type == "header")?.json_data?.css || "";
   criticalCss = headerCss + criticalCss;
+
+  // 处理 Swiper 组件
+  const swiperResult = processSwipers(normalizedHtml);
+  normalizedHtml = swiperResult.html;
 
   return {
     html: normalizedHtml,
     criticalCss,
     deferredCss,
     preloadResources,
-    swiperScripts,
-    hasSwipers
+    swiperScripts: swiperResult.swiperScripts,
+    hasSwipers: swiperResult.hasSwipers,
+    swiperCount: swiperResult.swiperCount,
+    hasAboveFoldSwiper: swiperResult.hasAboveFoldSwiper
   };
 }
 
@@ -191,6 +195,3 @@ function processDynamicContent(
     }
   });
 }
-
-// 导出 getSwiperCriticalCss 以保持向后兼容
-export {getSwiperCriticalCss};

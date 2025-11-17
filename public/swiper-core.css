@@ -1,0 +1,248 @@
+/**
+ * Swiper 核心样式 - 关键 CSS
+ *
+ * 用途：
+ * - 防止内容布局偏移 (CLS)
+ * - 提供最小化的关键样式
+ * - 完整样式从 CDN 加载
+ *
+ * 仅包含：
+ * - 容器布局样式
+ * - 防止闪烁的占位样式
+ * - 基础结构样式
+ */
+
+/* ===== Swiper 容器基础样式 ===== */
+.gjs-swiper-root {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  display: block;
+}
+
+.swiper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+  list-style: none;
+  padding: 0;
+  z-index: 1;
+}
+
+/* ===== Swiper Wrapper (Flex 布局) ===== */
+.swiper-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  transition-property: transform;
+  box-sizing: content-box;
+}
+
+/* ===== Swiper 幻灯片 ===== */
+.swiper-slide {
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition-property: transform;
+}
+
+/* 图片容器 */
+.swiper-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== 分页器基础样式 ===== */
+.swiper-pagination {
+  position: absolute;
+  text-align: center;
+  transition: opacity 0.3s;
+  transform: translate3d(0, 0, 0);
+  z-index: 10;
+}
+
+.swiper-pagination-horizontal {
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+}
+
+.swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #000;
+  opacity: 0.2;
+  margin: 0 4px;
+  cursor: pointer;
+  transition: opacity 0.3s, background 0.3s;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1;
+  background: #007aff;
+}
+
+/* ===== 导航按钮基础样式 ===== */
+.swiper-button-prev,
+.swiper-button-next {
+  position: absolute;
+  top: 50%;
+  width: 27px;
+  height: 44px;
+  margin-top: -22px;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #007aff;
+  transition: opacity 0.3s;
+}
+
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-family: swiper-icons;
+  font-size: 44px;
+  text-transform: none !important;
+  letter-spacing: 0;
+  font-variant: initial;
+  line-height: 1;
+}
+
+.swiper-button-prev {
+  left: 10px;
+  right: auto;
+}
+
+.swiper-button-prev:after {
+  content: 'prev';
+}
+
+.swiper-button-next {
+  right: 10px;
+  left: auto;
+}
+
+.swiper-button-next:after {
+  content: 'next';
+}
+
+.swiper-button-disabled {
+  opacity: 0.35;
+  cursor: auto;
+  pointer-events: none;
+}
+
+/* ===== 防止布局偏移 (CLS) ===== */
+.gjs-swiper-root::before {
+  content: '';
+  display: block;
+  padding-top: 56.25%; /* 16:9 默认宽高比 */
+}
+
+.gjs-swiper-root .swiper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 如果已设置固定高度，移除默认宽高比 */
+.gjs-swiper-root[style*="height"]::before {
+  content: none;
+}
+
+/* ===== 加载状态占位 ===== */
+.swiper-slide:not([style*="background"]):not(:has(img)) {
+  background-color: #f5f5f5;
+  min-height: 300px;
+}
+
+/* ===== 响应式优化 ===== */
+@media (max-width: 768px) {
+  .swiper-button-prev,
+  .swiper-button-next {
+    width: 20px;
+    height: 32px;
+    margin-top: -16px;
+  }
+
+  .swiper-button-prev:after,
+  .swiper-button-next:after {
+    font-size: 32px;
+  }
+
+  .swiper-pagination-bullet {
+    width: 6px;
+    height: 6px;
+    margin: 0 3px;
+  }
+}
+
+/* ===== 辅助功能 ===== */
+.swiper-slide {
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+/* 防止图片拖拽 */
+.swiper-slide img {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ===== 过渡效果基础支持 ===== */
+.swiper-fade .swiper-slide {
+  pointer-events: none;
+  transition-property: opacity;
+}
+
+.swiper-fade .swiper-slide-active {
+  pointer-events: auto;
+}
+
+/* ===== 立方体效果基础支持 ===== */
+.swiper-cube {
+  overflow: visible;
+}
+
+.swiper-cube .swiper-slide {
+  pointer-events: none;
+  backface-visibility: hidden;
+  z-index: 1;
+  visibility: hidden;
+  transform-origin: 0 0;
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-cube .swiper-slide-active,
+.swiper-cube .swiper-slide-next,
+.swiper-cube .swiper-slide-prev {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* ===== 性能优化 ===== */
+.swiper-wrapper,
+.swiper-slide {
+  will-change: transform;
+}
+
+/* 硬件加速 */
+.swiper {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
