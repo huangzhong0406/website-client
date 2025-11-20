@@ -95,8 +95,12 @@
       const container = this.container.querySelector(SELECTORS.relatedContent);
       if (!container) return;
 
+      // 显示骨架屏
+      const skeletonCount = this.config.relatedProductsCount || 6;
+      container.innerHTML = this.generateSkeletonHtml(skeletonCount);
+
       try {
-        const response = await fetch(`/api/products/${this.productId}/related?limit=${this.config.relatedProductsCount || 6}`);
+        const response = await fetch(`/api/module/products/related?product_id=${this.productId}`);
         const data = await response.json();
 
         if (!data.products || !data.products.length) {
@@ -114,6 +118,29 @@
         console.error('Failed to load related products:', error);
         container.innerHTML = '<p>Failed to load related products</p>';
       }
+    }
+
+    generateSkeletonHtml(count) {
+      const skeletonCards = Array.from({ length: count }, () => `
+        <div class="swiper-slide">
+          <div class="related-product-card skeleton">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-button"></div>
+          </div>
+        </div>
+      `).join('');
+
+      return `
+        <div class="swiper pd-related-swiper">
+          <div class="swiper-wrapper">
+            ${skeletonCards}
+          </div>
+          <div class="swiper-button-next"></div>
+          <div class="swiper-button-prev"></div>
+        </div>
+      `;
     }
 
     generateRelatedProductsHtml(products) {

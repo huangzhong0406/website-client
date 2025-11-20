@@ -21,16 +21,24 @@ function calculatePages(currentPage, totalPages) {
 
 /**
  * Generate pagination HTML
- * @param {Object} pagination - 分页信息
+ * @param {Object} pagination - 分页信息 {page: 当前页码, size: 每页数量, total: 总记录数}
  * @param {Object} currentParams - 当前 URL 参数（用于保留 sort 等参数）
  */
 export function generatePagination(pagination, currentParams = {}) {
-  if (!pagination || pagination.total <= 1) {
+  if (!pagination || pagination.total <= 0) {
     return "";
   }
 
-  const {page, total} = pagination;
-  const pages = calculatePages(page, total);
+  const {page, size, total} = pagination;
+  // 计算总页数：总记录数 / 每页数量，向上取整
+  const totalPages = Math.ceil(total / size);
+
+  // 如果只有一页，不显示分页器
+  if (totalPages <= 1) {
+    return "";
+  }
+
+  const pages = calculatePages(page, totalPages);
 
   // 构建分页 URL（保留其他参数，如 sort）
   const buildPageUrl = (page) => {
@@ -97,7 +105,7 @@ export function generatePagination(pagination, currentParams = {}) {
       </div>
 
       ${
-        page < total
+        page < totalPages
           ? `
         <a
           href="${buildPageUrl(page + 1)}"

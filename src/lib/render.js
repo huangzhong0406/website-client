@@ -21,7 +21,6 @@ import {processSwipers} from "./render/swiperProcessor.js";
  * @param {string} options.html - HTML 内容
  * @param {string} options.css - CSS 样式
  * @param {Array} options.assets - 资源数组
- * @param {Array} options.productData - 产品数据
  * @param {string} options.currentSlug - 当前页面路径
  * @param {Array} options.globalComponents - 全局组件数据
  * @param {Object} options.productListPageData - 产品列表页数据
@@ -29,6 +28,7 @@ import {processSwipers} from "./render/swiperProcessor.js";
  * @param {Object} options.productDetailData - 产品详情数据
  * @param {Object} options.blogDetailData - 博客详情数据
  * @param {Object} options.currentParams - 当前 URL 参数
+ * @param {string|number} options.currentCategoryId - 当前分类ID（用于高亮分类）
  * @param {boolean} options.skipSanitization - 是否跳过 HTML 清理
  * @returns {Object} 处理后的内容
  */
@@ -36,7 +36,6 @@ export function prepareGrapesContent({
   html = "",
   css = "",
   assets = [],
-  productData = null,
   currentSlug = "",
   globalComponents = null,
   productListPageData = null,
@@ -44,10 +43,11 @@ export function prepareGrapesContent({
   productDetailData = null,
   blogDetailData = null,
   currentParams = {},
+  currentCategoryId = null,
   skipSanitization = false
 } = {}) {
   // 检查是否需要处理动态内容
-  const needsProcessing = productData || globalComponents || productListPageData || blogListPageData || productDetailData || blogDetailData || assets.length > 0;
+  const needsProcessing = globalComponents || productListPageData || blogListPageData || productDetailData || blogDetailData || assets.length > 0;
 
   if (!needsProcessing) {
     // 无需处理,但仍需检查 Swiper
@@ -95,12 +95,12 @@ export function prepareGrapesContent({
   // 单次遍历处理所有动态内容
   processDynamicContent($, {
     globalComponents,
-    productData,
     productListPageData,
     blogListPageData,
     productDetailData,
     currentSlug,
     currentParams,
+    currentCategoryId,
     assetMap,
     preloadResources
   });
@@ -136,7 +136,18 @@ export function prepareGrapesContent({
  */
 function processDynamicContent(
   $,
-  {globalComponents, productData, productListPageData, blogListPageData, productDetailData, currentSlug, currentParams, assetMap, preloadResources}
+  {
+    globalComponents,
+    productListPageData,
+    blogListPageData,
+    productDetailData,
+    blogDetailData,
+    currentSlug,
+    currentParams,
+    currentCategoryId,
+    assetMap,
+    preloadResources
+  }
 ) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
@@ -153,7 +164,7 @@ function processDynamicContent(
 
     // 处理产品列表页组件
     if (componentType === "product-list-page" && productListPageData) {
-      processProductListPageComponent($, $elem, productListPageData, currentSlug, currentParams);
+      processProductListPageComponent($, $elem, productListPageData, currentSlug, currentParams, currentCategoryId);
     }
 
     // 处理产品列表详情组件
@@ -163,7 +174,7 @@ function processDynamicContent(
 
     // 处理博客列表页组件
     else if (componentType === "blog-list-page" && blogListPageData) {
-      processBlogListPageComponent($, $elem, blogListPageData, currentSlug, currentParams);
+      processBlogListPageComponent($, $elem, blogListPageData, currentSlug, currentParams, currentCategoryId);
     }
 
     // 处理产品详情组件

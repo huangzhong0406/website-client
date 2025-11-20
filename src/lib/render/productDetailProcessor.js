@@ -47,5 +47,40 @@ export function processProductDetailComponent($, $elem, productDetailData) {
   // 4. 设置 data-product-id 供 CSR 使用（加载相关产品）
   $elem.attr('data-product-id', id);
 
-  // 5. 相关产品容器保持骨架图，等待 CSR 加载
+  // 5. 生成相关产品骨架屏（替换旧的骨架屏HTML）
+  const $relatedContent = $elem.find('.pd-related-content');
+  if ($relatedContent.length > 0) {
+    const relatedCount = config.relatedProductsCount || 6;
+    const skeletonHtml = generateRelatedProductsSkeleton(relatedCount);
+    $relatedContent.html(skeletonHtml);
+  }
+}
+
+/**
+ * 生成相关产品骨架屏HTML
+ * @param {number} count - 骨架屏数量
+ * @returns {string} 骨架屏HTML
+ */
+function generateRelatedProductsSkeleton(count) {
+  const skeletonCount = Math.min(count || 3, 6);
+  const skeletonCards = Array(skeletonCount).fill(0).map(() => `
+    <div class="swiper-slide">
+      <div class="related-product-card skeleton">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-title"></div>
+        <div class="skeleton-title"></div>
+        <div class="skeleton-button"></div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="swiper pd-related-swiper">
+      <div class="swiper-wrapper">
+        ${skeletonCards}
+      </div>
+      <div class="swiper-button-next"></div>
+      <div class="swiper-button-prev"></div>
+    </div>
+  `;
 }

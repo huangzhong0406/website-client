@@ -2,14 +2,14 @@ import {cache} from "react";
 import {notFound} from "next/navigation";
 import DeferredStyle from "../../components/DeferredStyle";
 import SwiperLoader from "../../components/SwiperLoader";
-import {fetchPage, fetchProductListPageData, fetchProductDetail, PageNotFoundError, PageServiceError} from "../../services/pages";
+import {fetchPage, fetchProductListPageData, fetchBlogListPageData, PageNotFoundError, PageServiceError} from "../../services/pages";
 import {prepareGrapesContent} from "../../lib/render";
 import {logError} from "../../lib/logger";
 import {getTenantContext, TenantNotFoundError, TenantResolutionError} from "../../lib/tenant";
+import {parseSortValue} from "../../config/sortOptions";
 
 // 缓存页面数据，避免同一请求周期内重复访问接口
 const getPageData = cache(async (slugSegments, tenant) => fetchPage(slugSegments, tenant));
-const getProductsData = cache(async (slugSegments, tenant) => fetchProductListPageData(slugSegments, tenant));
 
 export const dynamicParams = true;
 
@@ -127,30 +127,31 @@ export default async function RenderedPage({params, searchParams}) {
   // 获取当前页面 slug 字符串
   const currentSlug = slug.length > 0 ? `/${slug.join("/")}` : "/";
 
-  // 判断是否是产品列表页，获取产品数据
+  // 获取资源类型（用于判断是产品还是博客）
+  const resourceType = page.page?.type;
+
+  // 获取当前分类ID（用于分类高亮）
+  const currentCategoryId = page.context?.resource?.id || '';
+
+  // 初始化数据变量
   let productListPageData = null;
+  let productDetailData = null;
+  let blogListPageData = null;
+  let blogDetailData = null;
 
-  page.page_type = "product_category"; // TODO：测试
-
-  if (page.page_type === "product_category") {
+  // 根据 resource_type 判断获取哪种数据
+  if (["products", "product_category"].includes(resourceType)) {
+    // 获取产品列表数据
     try {
       // 解析 URL 参数
       const pageNum = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page) : 1;
       const size = resolvedSearchParams.size ? parseInt(resolvedSearchParams.size) : 12;
-      const sort_by = ["name-asc", "name-desc"].includes(resolvedSearchParams.sort)
-        ? "name"
-        : ["date-asc", "date-desc"].includes(resolvedSearchParams.sort)
-        ? "created_at"
-        : "";
-      const sort_order = ["name-asc", "date-asc"].includes(resolvedSearchParams.sort)
-        ? "asc"
-        : ["name-desc", "date-desc"].includes(resolvedSearchParams.sort)
-        ? "desc"
-        : "";
+      // 使用公共配置解析排序参数
+      const {sortBy: sort_by, sortOrder: sort_order} = parseSortValue(resolvedSearchParams.sort || "");
 
-      // 获取产品列表数据
       productListPageData = await fetchProductListPageData({
         path: currentSlug,
+        category_id: currentCategoryId,
         page: pageNum,
         sort_by,
         sort_order,
@@ -161,34 +162,34 @@ export default async function RenderedPage({params, searchParams}) {
       logError("获取产品列表数据失败。", {error, slug, tenant});
       // 如果获取失败，继续渲染页面但不传递产品数据
     }
-  }
-
-  // 获取产品详情数据
-  let productDetailData = null;
-
-  // 优先使用页面数据中的 product_detail 字段（来自 API）
-  if (page.product_detail) {
-    productDetailData = page.context.resource;
-  }
-  // TODO：测试
-  // 如果页面类型是产品详情页但没有 product_detail 数据，使用测试数据
-  else if (page.page_type === "product_detail") {
+  } else if (["blogs", "blog_category"].includes(resourceType)) {
+    // 获取博客列表数据
     try {
-      // 从 URL 中提取产品 ID（假设 URL 格式为 /products/prod-123）
-      const productId = slug.length > 1 ? slug[slug.length - 1] : "prod-1";
-      productDetailData = await fetchProductDetail(productId, tenant);
+      // 解析 URL 参数
+      const pageNum = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page) : 1;
+      const size = resolvedSearchParams.size ? parseInt(resolvedSearchParams.size) : 12;
+      // 使用公共配置解析排序参数
+      const {sortBy: sort_by, sortOrder: sort_order} = parseSortValue(resolvedSearchParams.sort || "");
+
+      blogListPageData = await fetchBlogListPageData({
+        path: currentSlug,
+        category_id: currentCategoryId,
+        page: pageNum,
+        sort_by,
+        sort_order,
+        size,
+        tenant
+      });
     } catch (error) {
-      logError("获取产品详情数据失败。", {error, slug, tenant});
-      // 如果获取失败，继续渲染页面但不传递产品详情数据
+      logError("获取博客列表数据失败。", {error, slug, tenant});
+      // 如果获取失败，继续渲染页面但不传递博客数据
     }
-  }
-
-  // 获取博客详情数据
-  let blogDetailData = null;
-
-  // 优先使用页面数据中的 blog_detail 字段（来自 API）
-  if (page.blog_detail) {
-    blogDetailData = page.context.resource;
+  } else if (resourceType === "product") {
+    // 获取产品详情数据（从 page.context.resource）
+    productDetailData = page.context?.resource;
+  } else if (resourceType === "blog") {
+    // 获取博客详情数据（从 page.context.resource）
+    blogDetailData = page.context?.resource;
   }
 
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers, hasAboveFoldSwiper} = prepareGrapesContent({
@@ -196,9 +197,11 @@ export default async function RenderedPage({params, searchParams}) {
     productData: {}, // 产品数据（保留用于其他用途）
     productListPageData, // 产品列表页数据
     productDetailData, // 产品详情数据
+    blogListPageData, // 博客列表页数据
     blogDetailData, // 博客详情数据
     currentSlug: currentSlug, // 当前页面路径
     currentParams: resolvedSearchParams, // URL 参数
+    currentCategoryId: currentCategoryId, // 当前分类ID（用于分类高亮）
     globalComponents: globalComponentsResult, // 全局组件
     tenant
   });

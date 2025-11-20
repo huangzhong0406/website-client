@@ -40,7 +40,14 @@ function toSlugPath(slugSegments) {
  */
 export async function fetchPage(slugSegments, tenant) {
   const slugPath = toSlugPath(slugSegments);
-  const url = buildApiUrl(`/api/render/${encodeURIComponent(slugPath || "")}`);
+  // 对路径的每个段单独编码，避免将 / 编码为 %2F
+  const encodedPath = slugPath
+    ? slugPath
+        .split("/")
+        .map((segment) => encodeURIComponent(segment))
+        .join("/")
+    : "";
+  const url = buildApiUrl(`/api/render/${encodedPath}`);
   console.log("拉取页面数据，slug:", slugPath, "url:", url);
 
   let response;
@@ -125,10 +132,10 @@ async function safeReadJson(response) {
 }
 
 // 获取产品列表页数据（包括分类、产品、分页）
-export async function fetchProductListPageData({path, page, sort_by, sort_order, size, tenant}) {
+export async function fetchProductListPageData({path, category_id, page, sort_by, sort_order, size, tenant}) {
   // 构建查询参数
   const params = new URLSearchParams({
-    category_id: "",
+    category_id,
     sort_by,
     sort_order,
     page,
@@ -178,170 +185,46 @@ export async function fetchProductListPageData({path, page, sort_by, sort_order,
   return data.data || data;
 }
 
-/**
- * 获取产品详情数据
- * @param {string} productId - 产品 ID
- * @param {Object} tenant - 租户信息
- * @returns {Promise<Object>} 产品详情数据
- */
-export async function fetchProductDetail(productId, tenant) {
-  // ============ 测试假数据 ============
-  // TODO: 替换为真实 API 调用
+// 获取博客列表页数据（包括分类、博客、分页）
+export async function fetchBlogListPageData({path, category_id, page, sort_by, sort_order, size, tenant}) {
+  // 构建查询参数
+  const params = new URLSearchParams({
+    category_id,
+    sort_by,
+    sort_order,
+    page,
+    size: size
+  });
 
-  // 模拟产品详情数据
-  const mockProductDetail = {
-    id: productId || "prod-1",
-    title: `测试产品 ${productId || "1"} - 完整标题`,
-    description: "这是一款优质的产品，具有出色的性能和可靠的质量。适用于各种应用场景，满足您的多样化需求。",
-    images: [
-      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
-      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
-      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
-      "https://shopsource.singoo.cc/sections/images/800_800.jpg",
-      "https://shopsource.singoo.cc/sections/images/800_800.jpg"
-    ],
-    contact: {
-      email: "sales@example.com",
-      phone: "+86 400-123-4567",
-      whatsapp: "+86 138-1234-5678"
-    },
-    files: [
-      {
-        name: "产品目录.pdf",
-        url: "#catalog.pdf"
-      },
-      {
-        name: "技术规格书.pdf",
-        url: "#specification.pdf"
-      },
-      {
-        name: "用户手册.pdf",
-        url: "#manual.pdf"
-      }
-    ],
-    descriptions: [
-      {
-        title: "产品特性",
-        content: `
-          <div style="padding: 20px;">
-            <h3 style="margin-bottom: 15px;">主要特性</h3>
-            <ul style="line-height: 1.8; padding-left: 20px;">
-              <li>高性能处理器，运行流畅</li>
-              <li>大容量存储，满足日常需求</li>
-              <li>长续航电池，持久使用</li>
-              <li>精致外观设计，时尚美观</li>
-              <li>多种颜色可选，个性定制</li>
-            </ul>
-          </div>
-        `
-      },
-      {
-        title: "技术参数",
-        content: `
-          <div style="padding: 20px;">
-            <h3 style="margin-bottom: 15px;">详细参数</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; font-weight: bold; width: 30%;">尺寸</td>
-                <td style="padding: 10px;">150mm × 75mm × 8mm</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; font-weight: bold;">重量</td>
-                <td style="padding: 10px;">180g</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; font-weight: bold;">材质</td>
-                <td style="padding: 10px;">铝合金机身</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; font-weight: bold;">颜色</td>
-                <td style="padding: 10px;">黑色、白色、蓝色、金色</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; font-weight: bold;">保修</td>
-                <td style="padding: 10px;">1年全国联保</td>
-              </tr>
-            </table>
-          </div>
-        `
-      },
-      {
-        title: "包装清单",
-        content: `
-          <div style="padding: 20px;">
-            <h3 style="margin-bottom: 15px;">包装内容</h3>
-            <ul style="line-height: 1.8; padding-left: 20px;">
-              <li>产品主机 × 1</li>
-              <li>充电器 × 1</li>
-              <li>数据线 × 1</li>
-              <li>用户手册 × 1</li>
-              <li>保修卡 × 1</li>
-              <li>合格证 × 1</li>
-            </ul>
-          </div>
-        `
-      },
-      {
-        title: "售后服务",
-        content: `
-          <div style="padding: 20px;">
-            <h3 style="margin-bottom: 15px;">服务承诺</h3>
-            <p style="line-height: 1.8; margin-bottom: 15px;">
-              我们提供全面的售后服务，确保您的购买无忧：
-            </p>
-            <ul style="line-height: 1.8; padding-left: 20px;">
-              <li><strong>7天无理由退换：</strong>购买后7天内，如对产品不满意，可无理由退换</li>
-              <li><strong>1年质保：</strong>产品享受1年全国联保服务</li>
-              <li><strong>终身维护：</strong>超过保修期后，提供有偿维修服务</li>
-              <li><strong>24小时客服：</strong>全天候在线客服，随时解答您的问题</li>
-              <li><strong>上门服务：</strong>部分地区提供上门安装和维修服务</li>
-            </ul>
-            <p style="line-height: 1.8; margin-top: 15px;">
-              如有任何问题，请随时联系我们的客服团队。
-            </p>
-          </div>
-        `
-      }
-    ]
-  };
-
-  return mockProductDetail;
-
-  // ============ 真实 API 调用代码（当前被注释） ============
-
-  const url = buildApiUrl(`/api/renderer/products/${encodeURIComponent(productId)}`);
-  console.log("获取产品详情数据，productId:", productId, "url:", url);
+  const url = buildApiUrl(`/api/module/blog-categories?${params}`);
+  console.log("获取博客列表数据，path:", path, "url:", url);
 
   let response;
   try {
-    response = await apiFetch(url, productId, {
+    response = await apiFetch(url, path, {
       tenant,
       next: {
         revalidate: Number.isFinite(DEFAULT_REVALIDATE_SECONDS) && DEFAULT_REVALIDATE_SECONDS > 0 ? DEFAULT_REVALIDATE_SECONDS : 0,
-        tags: [`product:${productId}`]
+        tags: [`blogs:${path}`]
       }
     });
   } catch (error) {
-    logError("产品详情接口请求失败", {error, productId, tenant});
-    throw new PageServiceError("Failed to fetch product detail data.", {cause: error, tenant, productId});
-  }
-
-  if (response.status === 404) {
-    throw new PageNotFoundError(productId);
+    logError("博客列表接口请求失败", {error, path, tenant});
+    throw new PageServiceError("Failed to fetch blog list data.", {cause: error, tenant, path});
   }
 
   if (!response.ok) {
     const errorData = await safeReadJson(response);
-    logError("产品详情接口返回异常响应。", {
+    logError("博客列表接口返回异常响应。", {
       status: response.status,
       payload: errorData,
-      productId,
+      path,
       tenant
     });
-    throw new PageServiceError("Product detail API responded with an error.", {
+    throw new PageServiceError("Blog list API responded with an error.", {
       status: response.status,
       payload: errorData,
-      productId,
+      path,
       tenant
     });
   }
@@ -349,9 +232,9 @@ export async function fetchProductDetail(productId, tenant) {
   const data = await safeReadJson(response);
 
   if (!data || typeof data !== "object") {
-    throw new PageServiceError("Invalid response from product detail API.", {productId, tenant});
+    throw new PageServiceError("Invalid response from blog list API.", {path, tenant});
   }
 
-  // 返回产品详情数据
+  // 返回博客列表数据
   return data.data || data;
 }

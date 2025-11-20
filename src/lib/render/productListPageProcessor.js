@@ -13,10 +13,11 @@ import {generatePagination} from "../../utils/productlist/generatePagination.js"
  * @param {CheerioAPI} $ - Cheerio instance
  * @param {Cheerio} $elem - Component element
  * @param {Object} productListData - Product list page data containing categories, products, pagination
- * @param {string} currentSlug - 当前页面路径（用于高亮当前分类）
+ * @param {string} currentSlug - 当前页面路径（用于生成"全部"分类链接）
  * @param {Object} currentParams - 当前 URL 参数（用于生成分页链接）
+ * @param {string|number} currentCategoryId - 当前分类ID（用于高亮当前分类）
  */
-export function processProductListPageComponent($, $elem, productListData, currentSlug = '', currentParams = {}) {
+export function processProductListPageComponent($, $elem, productListData, currentSlug = '', currentParams = {}, currentCategoryId = null) {
   try {
     // 解析组件配置
     const configStr = $elem.attr('data-config');
@@ -26,7 +27,7 @@ export function processProductListPageComponent($, $elem, productListData, curre
     } catch (e) {
       logWarn('[ProductListPage] Failed to parse config:', e);
     }
-    
+
     console.log("--------productListData----------", productListData);
 
     // 获取数据
@@ -47,12 +48,12 @@ export function processProductListPageComponent($, $elem, productListData, curre
     const defaultExpandCategories = config.defaultExpandCategories !== false; // 默认展开
     const showProductDescription = config.showProductDescription !== false; // 默认显示描述
 
-    // 1. 注入分类树 (如果显示分类，传递 currentSlug 用于高亮)
+    // 1. 注入分类树 (如果显示分类，传递 currentCategoryId 用于高亮)
     if (config.showCategories !== false) {
       const $categoriesContainer = $elem.find('.plp-categories');
       if ($categoriesContainer.length > 0 && categories.length > 0) {
-        // 使用 currentSlug 作为"全部"分类的路径和高亮判断依据，传递 defaultExpandCategories 配置
-        const categoriesHtml = generateCategoryTree(categories, 0, currentSlug, currentSlug, defaultExpandCategories);
+        // 使用 currentCategoryId 判断高亮，currentSlug 作为"全部"分类的路径
+        const categoriesHtml = generateCategoryTree(categories, 0, currentCategoryId, currentSlug, defaultExpandCategories);
         $categoriesContainer.html(categoriesHtml);
         logWarn('[ProductListPage] Categories injected:', categories.length);
       }
@@ -83,13 +84,23 @@ export function processProductListPageComponent($, $elem, productListData, curre
       logWarn('[ProductListPage] Pagination injected');
     }
 
-    // 5. 设置排序下拉框当前值
-    if (currentParams.sort) {
-      const $sortSelect = $elem.find('.plp-sort-select');
-      if ($sortSelect.length > 0) {
-        $sortSelect.attr('data-current-sort', currentParams.sort);
-        // 注意：select 的 value 需要在客户端 JS 中设置
-      }
+    // 5. 设置排序下拉框当前值（在服务端设置 selected 属性）
+    const $sortSelect = $elem.find('.plp-sort-select');
+    if ($sortSelect.length > 0) {
+      const currentSort = currentParams.sort || config.defaultSort || 'name-asc';
+
+      // 设置 data 属性供客户端 JS 使用
+      $sortSelect.attr('data-current-sort', currentSort);
+
+      // 在服务端设置 option 的 selected 属性
+      $sortSelect.find('option').each((i, option) => {
+        const $option = $(option);
+        if ($option.attr('value') === currentSort) {
+          $option.attr('selected', 'selected');
+        } else {
+          $option.removeAttr('selected');
+        }
+      });
     }
 
     logWarn('[ProductListPage] Component processed successfully');

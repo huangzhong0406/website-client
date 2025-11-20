@@ -20,23 +20,35 @@ function escapeHtml(text) {
  * Recursively generate category tree HTML
  * @param {Array} categories - Category array
  * @param {number} level - Current level (0 for top level)
- * @param {string|null} currentPath - Currently selected category path (用于高亮当前分类)
+ * @param {string|null} currentCategoryId - Currently selected category ID (用于高亮当前分类)
  * @param {string|null} rootPath - Root path for "All" category (产品列表页根路径)
  * @param {boolean} defaultExpanded - Whether categories are expanded by default (默认是否展开子分类)
  * @returns {string} Category tree HTML
  */
-export function generateCategoryTree(categories, level = 0, currentPath = null, rootPath = null, defaultExpanded = true) {
+export function generateCategoryTree(categories, level = 0, currentCategoryId = null, rootPath = null, defaultExpanded = true) {
   if (!categories || categories.length === 0) {
     return '<p class="plp-categories-empty">暂无分类</p>';
   }
 
   const listClass = level === 0 ? 'plp-category-list' : 'plp-category-sublist';
 
+  // 计算"全部"分类的路径：从第一个分类的路径中提取基础路径
+  // 例如：/products/dian-zi-chan-pin -> /products
+  let allCategoryPath = rootPath || '#';
+  if (level === 0 && categories.length > 0 && categories[0].path) {
+    const firstCategoryPath = categories[0].path;
+    const pathSegments = firstCategoryPath.split('/').filter(Boolean);
+    // 提取基础路径（第一段）
+    if (pathSegments.length > 0) {
+      allCategoryPath = '/' + pathSegments[0];
+    }
+  }
+
   // 在顶层添加"全部"分类
-  const allCategory = level === 0 && rootPath ? {
+  const allCategory = level === 0 && categories.length > 0 ? {
     id: '__all__',
     name: '全部',
-    path: rootPath,
+    path: allCategoryPath,
     parent_id: null,
     children: []
   } : null;
@@ -47,8 +59,13 @@ export function generateCategoryTree(categories, level = 0, currentPath = null, 
   return `
     <ul class="${listClass}" ${level > 0 ? `data-level="${level}"` : ''}>
       ${allCategories.map(category => {
-        const categoryPath = category.path || '#';
-        const isActive = categoryPath === currentPath;
+        // 确保分类路径是绝对路径（以 / 开头）
+        let categoryPath = category.path || '#';
+        if (categoryPath !== '#' && !categoryPath.startsWith('/')) {
+          categoryPath = '/' + categoryPath;
+        }
+        // 使用分类ID进行高亮判断
+        const isActive = currentCategoryId && category.id == currentCategoryId;
         const hasChildren = category.children && category.children.length > 0;
         const expandedClass = hasChildren && defaultExpanded ? ' expanded' : '';
 
@@ -80,7 +97,7 @@ export function generateCategoryTree(categories, level = 0, currentPath = null, 
                 ${escapeHtml(category.name)}
               </a>
             `}
-            ${hasChildren ? generateCategoryTree(category.children, level + 1, currentPath, rootPath, defaultExpanded) : ''}
+            ${hasChildren ? generateCategoryTree(category.children, level + 1, currentCategoryId, rootPath, defaultExpanded) : ''}
           </li>
         `;
       }).join('')}

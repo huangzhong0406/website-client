@@ -69,7 +69,13 @@ export function generateBlogGrid(blogs, config = {}, showDescription = true, sho
     <div class="blp-blogs-grid">
       ${blogs
         .map(
-          (blog) => `
+          (blog) => {
+            // 确保博客路径是绝对路径（以 / 开头）
+            let blogPath = blog.path || '#';
+            if (blogPath !== '#' && !blogPath.startsWith('/')) {
+              blogPath = '/' + blogPath;
+            }
+            return `
         <div class="blp-blog-card" data-blog-id="${escapeHtml(blog.id)}">
           <div class="blp-blog-image-wrapper">
             <img
@@ -83,10 +89,11 @@ export function generateBlogGrid(blogs, config = {}, showDescription = true, sho
             ${showPublishDate && blog.published_at ? `<time class="blp-blog-date" datetime="${escapeHtml(blog.published_at)}">${formatDate(blog.published_at)}</time>` : ''}
             <h3 class="blp-blog-name">${escapeHtml(blog.name)}</h3>
             ${showDescription && blog.description ? `<p class="blp-blog-description">${escapeHtml(blog.description)}</p>` : ""}
-            <a href="${escapeHtml(blog.path || "#")}" class="blp-blog-learn-more">LEARN MORE</a>
+            <a href="${escapeHtml(blogPath)}" class="blp-blog-learn-more">LEARN MORE</a>
           </div>
         </div>
-      `
+      `;
+          }
         )
         .join("")}
     </div>
@@ -117,7 +124,13 @@ export function generateBlogList(blogs, showDescription = true, showPublishDate 
     <div class="blp-blogs-list-view">
       ${blogs
         .map(
-          (blog) => `
+          (blog) => {
+            // 确保博客路径是绝对路径（以 / 开头）
+            let blogPath = blog.path || '#';
+            if (blogPath !== '#' && !blogPath.startsWith('/')) {
+              blogPath = '/' + blogPath;
+            }
+            return `
         <div class="blp-blog-list-item" data-blog-id="${escapeHtml(blog.id)}">
           <div class="blp-blog-list-image">
             <img
@@ -130,10 +143,11 @@ export function generateBlogList(blogs, showDescription = true, showPublishDate 
             ${showPublishDate && blog.published_at ? `<time class="blp-blog-list-date" datetime="${escapeHtml(blog.published_at)}">${formatDate(blog.published_at)}</time>` : ''}
             <h3 class="blp-blog-list-name">${escapeHtml(blog.name)}</h3>
             ${showDescription && blog.description ? `<p class="blp-blog-list-description">${escapeHtml(blog.description)}</p>` : ""}
-            <a href="${escapeHtml(blog.path || "#")}" class="blp-blog-learn-more">LEARN MORE</a>
+            <a href="${escapeHtml(blogPath)}" class="blp-blog-learn-more">LEARN MORE</a>
           </div>
         </div>
-      `
+      `;
+          }
         )
         .join("")}
     </div>

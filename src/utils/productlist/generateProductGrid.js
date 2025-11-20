@@ -41,8 +41,14 @@ export function generateProductGrid(products, config = {}, showDescription = tru
     <div class="plp-products-grid ${colClasses}">
       ${products
         .map(
-          (product) => `
-        <a href="${escapeHtml(product.path || "#")}" class="plp-product-card" data-product-id="${escapeHtml(product.id)}">
+          (product) => {
+            // 确保产品路径是绝对路径（以 / 开头）
+            let productPath = product.path || '#';
+            if (productPath !== '#' && !productPath.startsWith('/')) {
+              productPath = '/' + productPath;
+            }
+            return `
+        <a href="${escapeHtml(productPath)}" class="plp-product-card" data-product-id="${escapeHtml(product.id)}">
           <div class="plp-product-image-wrapper">
             <img
               src="${escapeHtml(product.primary_image || "/placeholder.jpg")}"
@@ -56,7 +62,8 @@ export function generateProductGrid(products, config = {}, showDescription = tru
             ${showDescription && product.summary ? `<p class="plp-product-description">${escapeHtml(product.summary)}</p>` : ""}
           </div>
         </a>
-      `
+      `;
+          }
         )
         .join("")}
     </div>
@@ -86,8 +93,14 @@ export function generateProductList(products, showDescription = true) {
     <div class="plp-products-list-view">
       ${products
         .map(
-          (product) => `
-        <a href="${escapeHtml(product.path || "#")}" class="plp-product-list-item" data-product-id="${escapeHtml(product.id)}">
+          (product) => {
+            // 确保产品路径是绝对路径（以 / 开头）
+            let productPath = product.path || '#';
+            if (productPath !== '#' && !productPath.startsWith('/')) {
+              productPath = '/' + productPath;
+            }
+            return `
+        <a href="${escapeHtml(productPath)}" class="plp-product-list-item" data-product-id="${escapeHtml(product.id)}">
           <div class="plp-product-list-image">
             <img
               src="${escapeHtml(product.primary_image || "/placeholder.jpg")}"
@@ -100,7 +113,8 @@ export function generateProductList(products, showDescription = true) {
             ${showDescription && product.summary ? `<p class="plp-product-list-description">${escapeHtml(product.summary)}</p>` : ""}
           </div>
         </a>
-      `
+      `;
+          }
         )
         .join("")}
     </div>
