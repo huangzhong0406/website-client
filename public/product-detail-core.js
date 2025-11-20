@@ -1,15 +1,15 @@
-(function () {
-  "use strict";
+(function() {
+  'use strict';
 
-  if (typeof document === "undefined") return;
+  if (typeof document === 'undefined') return;
 
   const SELECTORS = {
     container: '[data-component-type="product-detail"]',
-    galleryMain: ".pd-gallery-main",
-    galleryThumbs: ".pd-gallery-thumbs",
-    tab: ".pd-tab",
-    tabContent: ".pd-tab-content",
-    relatedContent: ".pd-related-content"
+    galleryMain: '.pd-gallery-main',
+    galleryThumbs: '.pd-gallery-thumbs',
+    tab: '.pd-tab',
+    tabContent: '.pd-tab-content',
+    relatedContent: '.pd-related-content'
   };
 
   class ProductDetail {
@@ -22,7 +22,7 @@
     }
 
     parseConfig() {
-      const configStr = this.container.getAttribute("data-config");
+      const configStr = this.container.getAttribute('data-config');
       return configStr ? JSON.parse(configStr) : {};
     }
 
@@ -37,38 +37,43 @@
     }
 
     initGallerySwiper() {
+      // 轮播初始化完全由 swiperProcessor.js 负责
+      // 这里只获取已初始化的实例引用（用于后续可能的操作）
       const mainEl = this.container.querySelector(SELECTORS.galleryMain);
       const thumbEl = this.container.querySelector(SELECTORS.galleryThumbs);
 
-      if (!mainEl || !thumbEl || !window.Swiper) return;
+      if (!mainEl || !thumbEl) return;
 
-      // 缩略图轮播
-      const thumbSwiper = new Swiper(thumbEl, {
-        spaceBetween: 10,
-        slidesPerView: 4,
-        freeMode: true,
-        watchSlidesProgress: true
-      });
+      // 获取 swiperProcessor.js 初始化的实例
+      if (mainEl.__swiper_instance) {
+        this.mainSwiper = mainEl.__swiper_instance;
+      }
+      if (thumbEl.__swiper_instance) {
+        this.thumbSwiper = thumbEl.__swiper_instance;
+      }
 
-      // 主图轮播
-      const mainSwiper = new Swiper(mainEl, {
-        spaceBetween: 10,
-        navigation: false,
-        pagination: false,
-        thumbs: {
-          swiper: thumbSwiper
-        }
-      });
+      // 如果实例不存在，可能是异步加载，稍后再获取
+      if (!this.mainSwiper || !this.thumbSwiper) {
+        // 等待 swiperProcessor.js 初始化完成
+        const checkInterval = setInterval(() => {
+          if (mainEl.__swiper_instance && thumbEl.__swiper_instance) {
+            this.mainSwiper = mainEl.__swiper_instance;
+            this.thumbSwiper = thumbEl.__swiper_instance;
+            console.log('✅ 产品详情轮播实例已获取（由 swiperProcessor.js 初始化）');
+            clearInterval(checkInterval);
+          }
+        }, 100);
 
-      this.mainSwiper = mainSwiper;
-      this.thumbSwiper = thumbSwiper;
+        // 5秒后停止检测
+        setTimeout(() => clearInterval(checkInterval), 5000);
+      }
     }
 
     initDescriptionTabs() {
       const tabs = this.container.querySelectorAll(SELECTORS.tab);
 
       tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
+        tab.addEventListener('click', () => {
           this.switchTab(index);
         });
       });
@@ -77,13 +82,13 @@
     switchTab(index) {
       // 切换标签
       const tabs = this.container.querySelectorAll(SELECTORS.tab);
-      tabs.forEach((t) => t.classList.remove("active"));
-      tabs[index]?.classList.add("active");
+      tabs.forEach(t => t.classList.remove('active'));
+      tabs[index]?.classList.add('active');
 
       // 切换内容
       const contents = this.container.querySelectorAll(SELECTORS.tabContent);
-      contents.forEach((c) => c.classList.remove("active"));
-      contents[index]?.classList.add("active");
+      contents.forEach(c => c.classList.remove('active'));
+      contents[index]?.classList.add('active');
     }
 
     async loadRelatedProducts() {
@@ -92,28 +97,22 @@
 
       try {
         const response = await fetch(`/api/products/${this.productId}/related?limit=${this.config.relatedProductsCount || 6}`);
-        console.log("response", response);
-        if (response.ok) {
-          const data = await response.json();
+        const data = await response.json();
 
-          if (!data.products || !data.products.length) {
-            container.innerHTML = "<p>No related products</p>";
-            return;
-          }
-
-          // 生成相关产品 HTML
-          const html = this.generateRelatedProductsHtml(data.products);
-          container.innerHTML = html;
-
-          // 初始化轮播
-          this.initRelatedSwiper();
-        } else {
-          console.error("Failed to load related products:", response.statusText);
-          container.innerHTML = "<p>Failed to load related products</p>";
+        if (!data.products || !data.products.length) {
+          container.innerHTML = '<p>No related products</p>';
+          return;
         }
+
+        // 生成相关产品 HTML
+        const html = this.generateRelatedProductsHtml(data.products);
+        container.innerHTML = html;
+
+        // 初始化轮播
+        this.initRelatedSwiper();
       } catch (error) {
-        console.error("Failed to load related products:", error);
-        container.innerHTML = "<p>Failed to load related products</p>";
+        console.error('Failed to load related products:', error);
+        container.innerHTML = '<p>Failed to load related products</p>';
       }
     }
 
@@ -121,9 +120,7 @@
       return `
         <div class="swiper pd-related-swiper">
           <div class="swiper-wrapper">
-            ${products
-              .map(
-                (product) => `
+            ${products.map(product => `
               <div class="swiper-slide">
                 <div class="related-product-card">
                   <img src="${product.image}" alt="${product.title}" loading="lazy">
@@ -131,9 +128,7 @@
                   <a href="${product.path}" class="view-more-btn">Learn More</a>
                 </div>
               </div>
-            `
-              )
-              .join("")}
+            `).join('')}
           </div>
           <div class="swiper-button-next"></div>
           <div class="swiper-button-prev"></div>
@@ -142,19 +137,19 @@
     }
 
     initRelatedSwiper() {
-      const swiperEl = this.container.querySelector(".pd-related-swiper");
+      const swiperEl = this.container.querySelector('.pd-related-swiper');
       if (!swiperEl || !window.Swiper) return;
 
       new Swiper(swiperEl, {
         slidesPerView: 1,
         spaceBetween: 20,
         navigation: {
-          nextEl: ".swiper-button-next",
-          prevEl: ".swiper-button-prev"
+          nextEl: '.swiper-button-next',
+          prevEl: '.swiper-button-prev'
         },
         breakpoints: {
-          640: {slidesPerView: 2},
-          1024: {slidesPerView: 3}
+          640: { slidesPerView: 2 },
+          1024: { slidesPerView: 3 }
         }
       });
     }
@@ -162,26 +157,26 @@
 
   function initProductDetails() {
     const containers = document.querySelectorAll(SELECTORS.container);
-    containers.forEach((container) => {
-      if (container.dataset.pdInitialized === "true") return;
-      container.dataset.pdInitialized = "true";
+    containers.forEach(container => {
+      if (container.dataset.pdInitialized === 'true') return;
+      container.dataset.pdInitialized = 'true';
 
       new ProductDetail(container);
     });
   }
 
   // 初始化
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initProductDetails);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductDetails);
   } else {
     initProductDetails();
   }
 
   // 支持动态添加
-  if (typeof MutationObserver !== "undefined") {
+  if (typeof MutationObserver !== 'undefined') {
     const observer = new MutationObserver(() => {
       initProductDetails();
     });
-    observer.observe(document.body, {childList: true, subtree: true});
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 })();

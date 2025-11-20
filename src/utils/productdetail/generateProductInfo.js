@@ -5,8 +5,11 @@
  * @returns {string} HTML 字符串
  */
 export function generateProductInfoHtml(data, config = {}) {
-  const { name, summary, contact = {}, files = [] } = data;
+  const { name, summary, contact = {}, files = {} } = data;
   const showFiles = config.showFiles !== false;
+
+  // 从 files.documents 提取文档文件数据
+  const documents = files.documents || [];
 
   return `
     <div class="pd-info-wrapper">
@@ -69,12 +72,12 @@ export function generateProductInfoHtml(data, config = {}) {
       </div>
 
       ${
-        showFiles && files.length > 0
+        showFiles && documents.length > 0
           ? `
         <div class="pd-files">
           <h3>Downloads</h3>
           <div class="file-list">
-            ${files
+            ${documents
               .map(
                 (file) => `
               <a href="${file.url}"

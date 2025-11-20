@@ -18,7 +18,10 @@ export function processProductDetailComponent($, $elem, productDetailData) {
   const configStr = $elem.attr('data-config');
   const config = configStr ? JSON.parse(configStr) : {};
 
-  const {id, name, summary, images = [], contact = {}, files = [], contents = []} = productDetailData;
+  const {id, name, summary, files = {}, contact = {}, contents = []} = productDetailData;
+
+  // 从 files.images 提取图片数据
+  const images = files.images || [];
 
   // 1. 注入产品图片轮播
   const $gallery = $elem.find('.pd-gallery');

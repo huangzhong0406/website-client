@@ -11,6 +11,8 @@ import {processProductListPageComponent} from "./render/productListPageProcessor
 import {processProductListDetailComponent} from "./render/productListDetailProcessor.js";
 import {processGlobalHeaderComponent} from "./render/headerProcessor.js";
 import {processProductDetailComponent} from "./render/productDetailProcessor.js";
+import {processBlogListPageComponent} from "./render/blogListPageProcessor.js";
+import {processBlogDetailComponent} from "./render/blogDetailProcessor.js";
 import {processSwipers} from "./render/swiperProcessor.js";
 
 /**
@@ -23,6 +25,9 @@ import {processSwipers} from "./render/swiperProcessor.js";
  * @param {string} options.currentSlug - 当前页面路径
  * @param {Array} options.globalComponents - 全局组件数据
  * @param {Object} options.productListPageData - 产品列表页数据
+ * @param {Object} options.blogListPageData - 博客列表页数据
+ * @param {Object} options.productDetailData - 产品详情数据
+ * @param {Object} options.blogDetailData - 博客详情数据
  * @param {Object} options.currentParams - 当前 URL 参数
  * @param {boolean} options.skipSanitization - 是否跳过 HTML 清理
  * @returns {Object} 处理后的内容
@@ -35,12 +40,14 @@ export function prepareGrapesContent({
   currentSlug = "",
   globalComponents = null,
   productListPageData = null,
+  blogListPageData = null,
   productDetailData = null,
+  blogDetailData = null,
   currentParams = {},
   skipSanitization = false
 } = {}) {
   // 检查是否需要处理动态内容
-  const needsProcessing = productData || globalComponents || productListPageData || productDetailData || assets.length > 0;
+  const needsProcessing = productData || globalComponents || productListPageData || blogListPageData || productDetailData || blogDetailData || assets.length > 0;
 
   if (!needsProcessing) {
     // 无需处理,但仍需检查 Swiper
@@ -90,6 +97,7 @@ export function prepareGrapesContent({
     globalComponents,
     productData,
     productListPageData,
+    blogListPageData,
     productDetailData,
     currentSlug,
     currentParams,
@@ -128,7 +136,7 @@ export function prepareGrapesContent({
  */
 function processDynamicContent(
   $,
-  {globalComponents, productData, productListPageData, productDetailData, currentSlug, currentParams, assetMap, preloadResources}
+  {globalComponents, productData, productListPageData, blogListPageData, productDetailData, currentSlug, currentParams, assetMap, preloadResources}
 ) {
   // 1. 首先注入全局组件(如果需要)
   if (globalComponents) {
@@ -153,15 +161,26 @@ function processDynamicContent(
       processProductListDetailComponent($, $elem, productListPageData, currentParams);
     }
 
+    // 处理博客列表页组件
+    else if (componentType === "blog-list-page" && blogListPageData) {
+      processBlogListPageComponent($, $elem, blogListPageData, currentSlug, currentParams);
+    }
+
     // 处理产品详情组件
     else if (componentType === "product-detail" && productDetailData) {
       processProductDetailComponent($, $elem, productDetailData);
     }
 
+    // 处理博客详情组件
+    else if (componentType === "blog-detail" && blogDetailData) {
+      processBlogDetailComponent($, $elem, blogDetailData);
+    }
+
     // 处理 Global-Header 导航组件（备用逻辑，主要逻辑已在 injectGlobalComponents 中处理）
     // 这里保留以防某些特殊情况下页面中有多个 header 组件
     else if (componentType === "global-header" && globalComponents) {
-      const navigationData = globalComponents.find((com) => com.type === "global-header")?.json_data?.components?.menuData;
+      const headerCom = globalComponents.find((com) => com.type === "global-header");
+      const navigationData = headerCom?.json_data?.components?.menuData || headerCom?.json_data?.menuData;
       if (navigationData) {
         // 检查该元素是否已处理过（避免重复处理）
         if (!$elem.attr("data-menu-processed")) {

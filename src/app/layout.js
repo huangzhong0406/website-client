@@ -60,10 +60,15 @@ export default function RootLayout({children}) {
 
         {/* Product List Page 组件样式 */}
         <link rel="stylesheet" href="/product-list-page-core.css" />
-        {/* Product List Page 组件样式 */}
+        {/* Product List detail 组件样式 */}
         <link rel="stylesheet" href="/product-list-detail-core.css" />
-        {/* Product List Page 组件样式 */}
+        {/* Product detail 组件样式 */}
         <link rel="stylesheet" href="/product-detail-core.css" />
+        
+        {/* Blog List Page 组件样式 */}
+        <link rel="stylesheet" href="/blog-list-page-core.css" />
+        {/* Blog detail 组件样式 */}
+        <link rel="stylesheet" href="/blog-detail-core.css" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} renderer-body`}>
         {children}
@@ -77,9 +82,15 @@ export default function RootLayout({children}) {
 
         {/* Product List Page 组件脚本 */}
         <Script src="/product-list-detail-core.js" strategy="afterInteractive" />
-        
+
         {/* Product List Page 组件脚本 */}
         <Script src="/product-detail-core.js" strategy="afterInteractive" />
+
+        {/* Blog List Page 组件脚本 */}
+        <Script src="/blog-list-page-core.js" strategy="afterInteractive" />
+
+        {/* Blog detail 组件脚本 */}
+        <Script src="/blog-detail-core.js" strategy="afterInteractive" />
       </body>
     </html>
   );

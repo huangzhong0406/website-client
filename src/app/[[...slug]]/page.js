@@ -183,11 +183,20 @@ export default async function RenderedPage({params, searchParams}) {
     }
   }
 
+  // 获取博客详情数据
+  let blogDetailData = null;
+
+  // 优先使用页面数据中的 blog_detail 字段（来自 API）
+  if (page.blog_detail) {
+    blogDetailData = page.context.resource;
+  }
+
   const {html, criticalCss, deferredCss, preloadResources, swiperScripts, hasSwipers, hasAboveFoldSwiper} = prepareGrapesContent({
     ...contentPage,
     productData: {}, // 产品数据（保留用于其他用途）
     productListPageData, // 产品列表页数据
     productDetailData, // 产品详情数据
+    blogDetailData, // 博客详情数据
     currentSlug: currentSlug, // 当前页面路径
     currentParams: resolvedSearchParams, // URL 参数
     globalComponents: globalComponentsResult, // 全局组件

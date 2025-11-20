@@ -52,7 +52,7 @@ export function injectGlobalComponents($, globalComponents, currentSlug = '') {
       }
 
       // ✅ 新增：处理菜单数据（动态注入菜单项）
-      let menuData = com.json_data.components?.menuData;
+      let menuData = com.json_data.components?.menuData || com.json_data.menuData;
       if (menuData) {
         const $nav = $('[data-component-type="global-header"]');
         if ($nav.length > 0) {

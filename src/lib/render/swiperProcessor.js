@@ -57,7 +57,11 @@ export function processSwipers(html) {
   const $ = cheerio.load(html);
   const swiperRoots = $(`.${SWIPER_CONFIG.CLASS_NAMES.root}`);
 
-  if (swiperRoots.length === 0) {
+  // 同时查找产品详情轮播（.pd-gallery-main）
+  const productDetailSwipers = $('.swiper.pd-gallery-main');
+  const totalSwipers = swiperRoots.length + productDetailSwipers.length;
+
+  if (totalSwipers === 0) {
     return {
       html: $.html(),
       hasSwipers: false,
@@ -69,6 +73,7 @@ export function processSwipers(html) {
 
   const swiperConfigs = [];
   let firstSwiperIsAboveFold = false;
+  let globalIndex = 0;
 
   // 遍历所有 Swiper 根元素
   swiperRoots.each((index, rootEl) => {
@@ -84,8 +89,8 @@ export function processSwipers(html) {
     const config = readSwiperConfig($root);
 
     // 判断是否首屏 (简单判断：第一个 Swiper 视为首屏)
-    const isAboveFold = index === 0;
-    if (index === 0) {
+    const isAboveFold = globalIndex === 0;
+    if (globalIndex === 0) {
       firstSwiperIsAboveFold = true;
     }
 
@@ -101,15 +106,81 @@ export function processSwipers(html) {
     ensureFixedHeight($root, $swiperContainer, config);
 
     // 添加数据标识
-    $swiperContainer.attr('data-swiper-index', index);
+    $swiperContainer.attr('data-swiper-index', globalIndex);
     $swiperContainer.attr('data-swiper-priority', isAboveFold ? 'high' : 'low');
 
     swiperConfigs.push({
-      index,
+      index: globalIndex,
       config,
       isAboveFold,
-      selector: `.swiper[data-swiper-index="${index}"]`
+      type: 'standard',
+      selector: `.swiper[data-swiper-index="${globalIndex}"]`
     });
+
+    globalIndex++;
+  });
+
+  // 处理产品详情轮播（thumbs 模式）
+  productDetailSwipers.each((_, mainGalleryEl) => {
+    const $mainGallery = $(mainGalleryEl);
+    const $productDetail = $mainGallery.closest('[data-component-type="product-detail"]');
+
+    if ($productDetail.length === 0) {
+      console.warn('产品详情轮播缺少父容器 [data-component-type="product-detail"]');
+      return;
+    }
+
+    // 查找缩略图轮播
+    const $thumbsGallery = $productDetail.find('.swiper.pd-gallery-thumbs').first();
+
+    // 读取优先级配置
+    const priority = $mainGallery.attr('data-swiper-priority') || 'normal';
+    const isAboveFold = priority === 'high' || globalIndex === 0;
+
+    if (globalIndex === 0) {
+      firstSwiperIsAboveFold = true;
+    }
+
+    // 优化首屏图片
+    if (isAboveFold) {
+      optimizeFirstSlide($, $mainGallery);
+      if ($thumbsGallery.length > 0) {
+        optimizeFirstSlide($, $thumbsGallery);
+      }
+    } else {
+      // 非首屏图片懒加载
+      lazyLoadSlides($, $mainGallery);
+      if ($thumbsGallery.length > 0) {
+        lazyLoadSlides($, $thumbsGallery);
+      }
+    }
+
+    // 为主轮播和缩略图轮播添加标识
+    $mainGallery.attr('data-swiper-index', globalIndex);
+    $mainGallery.attr('data-swiper-priority', isAboveFold ? 'high' : 'low');
+
+    if ($thumbsGallery.length > 0) {
+      $thumbsGallery.attr('data-swiper-index', `${globalIndex}-thumbs`);
+      $thumbsGallery.attr('data-swiper-priority', isAboveFold ? 'high' : 'low');
+    }
+
+    // 构建产品详情轮播配置
+    swiperConfigs.push({
+      index: globalIndex,
+      config: {
+        loop: true,
+        autoplay: false, // 产品详情默认不自动播放
+        spaceBetween: 10,
+        slidesPerView: 1
+      },
+      isAboveFold,
+      type: 'product-detail',
+      hasThumb: $thumbsGallery.length > 0,
+      mainSelector: `.pd-gallery-main[data-swiper-index="${globalIndex}"]`,
+      thumbSelector: $thumbsGallery.length > 0 ? `.pd-gallery-thumbs[data-swiper-index="${globalIndex}-thumbs"]` : null
+    });
+
+    globalIndex++;
   });
 
   // 生成初始化脚本
@@ -245,18 +316,134 @@ function generateInitScripts(swiperConfigs) {
   const scripts = [];
 
   // 为每个 Swiper 生成初始化代码
-  swiperConfigs.forEach(({ index, config, isAboveFold, selector }) => {
-    const scriptContent = generateSingleSwiperScript(selector, config, isAboveFold);
+  swiperConfigs.forEach((swiperConfig) => {
+    const { index, config, isAboveFold, type } = swiperConfig;
+
+    let scriptContent;
+
+    if (type === 'product-detail') {
+      // 产品详情轮播使用 thumbs 模式
+      scriptContent = generateProductDetailSwiperScript(swiperConfig);
+    } else {
+      // 标准轮播
+      scriptContent = generateSingleSwiperScript(swiperConfig.selector, config, isAboveFold);
+    }
 
     scripts.push({
       index,
       content: scriptContent,
       isAboveFold,
-      priority: isAboveFold ? 'high' : 'low'
+      priority: isAboveFold ? 'high' : 'low',
+      type: type || 'standard'
     });
   });
 
   return scripts;
+}
+
+/**
+ * 生成产品详情轮播初始化脚本（thumbs 模式）
+ * @param {Object} swiperConfig - Swiper 配置对象
+ * @returns {string} 脚本内容
+ */
+function generateProductDetailSwiperScript({ mainSelector, thumbSelector, isAboveFold, hasThumb }) {
+  return `
+(function() {
+  function initProductDetailSwiper${isAboveFold ? 'Immediate' : 'Lazy'}() {
+    const mainEl = document.querySelector('${mainSelector}');
+    if (!mainEl || mainEl.__swiper_initialized) return;
+
+    // 检查 Swiper 是否已加载
+    if (typeof Swiper === 'undefined') {
+      console.warn('Swiper library not loaded yet');
+      return;
+    }
+
+    ${hasThumb ? `
+    // 初始化缩略图轮播
+    const thumbEl = document.querySelector('${thumbSelector}');
+    let thumbsSwiper = null;
+
+    if (thumbEl && !thumbEl.__swiper_initialized) {
+      try {
+        thumbsSwiper = new Swiper(thumbEl, {
+          spaceBetween: 10,
+          slidesPerView: 4,
+          freeMode: true,
+          watchSlidesProgress: true,
+          breakpoints: {
+            640: { slidesPerView: 5 },
+            768: { slidesPerView: 6 },
+            1024: { slidesPerView: 7 }
+          }
+        });
+        thumbEl.__swiper_initialized = true;
+        thumbEl.__swiper_instance = thumbsSwiper;
+        console.log('✅ 产品详情缩略图轮播初始化成功');
+      } catch (error) {
+        console.error('❌ 产品详情缩略图轮播初始化失败:', error);
+      }
+    }
+    ` : ''}
+
+    // 初始化主轮播
+    try {
+      const mainConfig = {
+        loop: true,
+        spaceBetween: 10,
+        navigation: {
+          nextEl: mainEl.querySelector('.swiper-button-next'),
+          prevEl: mainEl.querySelector('.swiper-button-prev')
+        },
+        pagination: {
+          el: mainEl.querySelector('.swiper-pagination'),
+          clickable: true
+        }${hasThumb ? ',\n        thumbs: thumbsSwiper ? { swiper: thumbsSwiper } : undefined' : ''}
+      };
+
+      const mainSwiper = new Swiper(mainEl, mainConfig);
+      mainEl.__swiper_initialized = true;
+      mainEl.__swiper_instance = mainSwiper;
+      console.log('✅ 产品详情主轮播初始化成功 (thumbs 模式)');
+    } catch (error) {
+      console.error('❌ 产品详情主轮播初始化失败:', error);
+    }
+  }
+
+  ${isAboveFold
+    ? `// 首屏立即初始化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductDetailSwiperImmediate);
+  } else {
+    initProductDetailSwiperImmediate();
+  }`
+    : `// 非首屏懒加载 (Intersection Observer)
+  if ('IntersectionObserver' in window) {
+    const mainEl = document.querySelector('${mainSelector}');
+    if (mainEl) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            initProductDetailSwiperLazy();
+            observer.disconnect();
+          }
+        });
+      }, {
+        rootMargin: '200px' // 提前 200px 加载
+      });
+      observer.observe(mainEl);
+    }
+  } else {
+    // 降级方案：直接初始化
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initProductDetailSwiperLazy);
+    } else {
+      initProductDetailSwiperLazy();
+    }
+  }`
+  }
+})();
+`.trim();
 }
 
 /**
