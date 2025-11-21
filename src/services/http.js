@@ -99,7 +99,7 @@ export async function apiFetch(input, slug, init = {}) {
     signal: controller.signal
   };
 
-  console.log("API 请求:", finalInit);
+  console.log("API 请求头信息:", finalInit);
 
   try {
     const response = await fetch(input, finalInit);

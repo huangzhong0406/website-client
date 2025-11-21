@@ -42,7 +42,7 @@ export default function SwiperLoader({ scripts = [], preloadSwiper = false, onLo
 
     // 检查是否已经加载过 Swiper
     if (typeof window !== 'undefined' && window.Swiper) {
-      console.log('✅ Swiper already loaded');
+      // console.log('✅ Swiper already loaded');
       executeScripts();
       return;
     }
@@ -88,7 +88,7 @@ export default function SwiperLoader({ scripts = [], preloadSwiper = false, onLo
       // 并行加载 CSS 和 JS
       await Promise.all([loadSwiperCSS(), loadSwiperJS()]);
 
-      console.log('✅ Swiper library loaded successfully');
+      // console.log('✅ Swiper library loaded successfully');
 
       // 执行初始化脚本
       executeScripts();
@@ -140,10 +140,10 @@ export default function SwiperLoader({ scripts = [], preloadSwiper = false, onLo
     for (const cdnUrl of SWIPER_CDN_SOURCES) {
       try {
         await loadScript(cdnUrl);
-        console.log(`✅ Swiper JS loaded from: ${cdnUrl}`);
+        // console.log(`✅ Swiper JS loaded from: ${cdnUrl}`);
         return;
       } catch (error) {
-        console.warn(`⚠️ Failed to load Swiper from ${cdnUrl}, trying next...`);
+        // console.warn(`⚠️ Failed to load Swiper from ${cdnUrl}, trying next...`);
       }
     }
 
@@ -210,7 +210,7 @@ export default function SwiperLoader({ scripts = [], preloadSwiper = false, onLo
       return;
     }
 
-    console.log(`🚀 Executing ${scripts.length} Swiper init script(s)...`);
+    // console.log(`🚀 Executing ${scripts.length} Swiper init script(s)...`);
 
     // 按优先级排序：首屏优先
     const sortedScripts = [...scripts].sort((a, b) => {
@@ -225,7 +225,7 @@ export default function SwiperLoader({ scripts = [], preloadSwiper = false, onLo
         // 使用 Function 构造函数执行脚本 (比 eval 更安全)
         const fn = new Function(script.content);
         fn();
-        console.log(`✅ Script ${idx + 1}/${scripts.length} executed`);
+        // console.log(`✅ Script ${idx + 1}/${scripts.length} executed`);
       } catch (error) {
         console.error(`❌ Failed to execute script ${idx + 1}:`, error);
       }

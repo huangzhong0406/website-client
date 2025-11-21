@@ -35,7 +35,7 @@
  * }
  */
 export function generateMenuHtml(items, level = 0, currentPath = '') {
-  console.log("菜单项数据结构", items);
+  // console.log("菜单项数据结构", items);
   if (!items || items.length === 0) return '';
 
   const listClass = level === 0 ? 'header-menu-list' : 'header-submenu';

@@ -14,7 +14,6 @@ import {processGlobalHeaderComponent} from "./headerProcessor.js";
  * @param {string} currentSlug - 当前页面路径，用于菜单高亮
  */
 export function injectGlobalComponents($, globalComponents, currentSlug = '') {
-  console.log("准备注入全局组件:", globalComponents);
   if (!globalComponents?.length) {
     return;
   }
@@ -31,7 +30,6 @@ export function injectGlobalComponents($, globalComponents, currentSlug = '') {
   globalComponents.forEach((com) => {
     // ✅ 注入 Global-Header 组件（新的头部系统）
     if (com.type === "header" && com.json_data?.html) {
-      console.log("[Render] 检测到全局 Global-Header 组件");
 
       // 从 HTML 中生成导航数据（如果需要）
       const $headerHtml = $(com.json_data.html);
@@ -43,7 +41,6 @@ export function injectGlobalComponents($, globalComponents, currentSlug = '') {
       } else {
         // 如果没有 Header，插入到页面顶部
         root.prepend($headerHtml);
-        console.log("[Render] 已将 Global-Header 插入到页面顶部");
       }
 
       // 注入 Header 样式
@@ -56,7 +53,6 @@ export function injectGlobalComponents($, globalComponents, currentSlug = '') {
       if (menuData) {
         const $nav = $('[data-component-type="global-header"]');
         if ($nav.length > 0) {
-          console.log("[Render] 开始处理 Global-Header 菜单数据");
           processGlobalHeaderComponent($, $nav.first(), menuData, currentSlug);
         }
       }
@@ -68,7 +64,7 @@ export function injectGlobalComponents($, globalComponents, currentSlug = '') {
       const variant = com.json_data.variant || "classic";
       root.prepend(`<link rel="stylesheet" href="/styles/global-header-${variant}.css">`);
 
-      logWarn("已自动注入全局 Global-Header 组件");
+      // logWarn("已自动注入全局 Global-Header 组件");
     }
 
     // 注入全局页脚 - 没有的话就插入，有的话就替换第一个
@@ -80,7 +76,7 @@ export function injectGlobalComponents($, globalComponents, currentSlug = '') {
         // 如果没有新版 global-footer，才插入旧版
         root.append(com.json_data.html);
       }
-      logWarn("已自动注入全局页脚组件");
+      // logWarn("已自动注入全局页脚组件");
     }
 
     // ✅ 注入 Global-Footer 组件（新的页脚系统）

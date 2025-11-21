@@ -89,7 +89,6 @@
     init() {
       this.bindEvents();
       this.setupAriaAttributes();
-      console.log('[X-Nav] 已初始化');
     }
 
     /**
@@ -388,14 +387,12 @@
     navElements.forEach(navElement => {
       // 避免重复初始化
       if (navElement.headerInstance) {
-        console.warn('[X-Nav] 导航已初始化，跳过');
         return;
       }
 
       navElement.headerInstance = new GlobalHeader(navElement);
     });
 
-    console.log(`[X-Nav] 已初始化 ${navElements.length} 个导航组件`);
   }
 
   // DOM 加载完成后初始化

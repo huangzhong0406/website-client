@@ -48,7 +48,7 @@ export async function fetchPage(slugSegments, tenant) {
         .join("/")
     : "";
   const url = buildApiUrl(`/api/render/${encodedPath}`);
-  console.log("拉取页面数据，slug:", slugPath, "url:", url);
+  console.log(`页面接口请求 - 1.路由： url:${url}, slug: ${slugPath}`,);
 
   let response;
 
@@ -61,7 +61,7 @@ export async function fetchPage(slugSegments, tenant) {
       }
     });
   } catch (error) {
-    logError("页面接口请求失败", {error, slug: slugPath, tenant});
+    logError("页面接口请求 - 2. 请求失败", {error, slug: slugPath, tenant});
     throw new PageServiceError("Failed to reach page API.", {cause: error, tenant, slug: slugPath});
   }
 
@@ -104,8 +104,6 @@ export async function fetchPage(slugSegments, tenant) {
     // console.log(`收到页面建议: ${data.sug}，重新请求...`);
     return await fetchPage(data.sug, tenant);
   }
-
-  console.log("打印JSON数据:", pageData);
 
   return pageData;
   // {

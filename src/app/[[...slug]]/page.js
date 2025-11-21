@@ -15,66 +15,6 @@ export const dynamicParams = true;
 
 export const revalidate = 3600;
 
-// 获取 Meta 数据
-export async function generateMetadata({params}) {
-  try {
-    const resolvedParams = await params;
-    const slug = resolvedParams.slug ?? [];
-
-    // 过滤系统路径
-    if (slug.length > 0 && slug[0] === ".well-known") {
-      return {title: "页面未找到"};
-    }
-
-    const tenant = await getTenantContext();
-    console.log("租户信息:", JSON.stringify(tenant));
-
-    // 预先获取接口数据，将 meta 字段映射给 Next.js Metadata
-    const page = await getPageData(slug, tenant);
-    console.log("获取接口数据:", page);
-    const meta = page.meta ?? {};
-
-    const robots = page.publishStatus === "published" ? meta.robots : {index: false, follow: false};
-
-    return {
-      title: meta.title ?? "未命名页面",
-      description: meta.description ?? "",
-      robots,
-      openGraph: {
-        title: meta.ogTitle ?? meta.title ?? "未命名页面",
-        description: meta.ogDescription ?? meta.description ?? "",
-        type: "website",
-        url: meta.url ?? undefined,
-        images: meta.ogImage ? [].concat(meta.ogImage) : undefined
-      },
-      alternates: meta.canonical ? {canonical: meta.canonical} : undefined
-    };
-  } catch (error) {
-    if (error instanceof TenantNotFoundError) {
-      return {
-        title: "访问被拒绝",
-        robots: {
-          index: false,
-          follow: false
-        }
-      };
-    }
-
-    if (error instanceof PageNotFoundError) {
-      return {
-        title: "页面未找到",
-        robots: {
-          index: false,
-          follow: false
-        }
-      };
-    }
-
-    logError("生成页面元数据失败。", {error});
-    return {};
-  }
-}
-
 export default async function RenderedPage({params, searchParams}) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
@@ -105,6 +45,7 @@ export default async function RenderedPage({params, searchParams}) {
   let page;
   try {
     page = await getPageData(slug, tenant);
+    console.log(`页面接口请求 - 2.响应数据：`, page);
   } catch (error) {
     if (error instanceof PageNotFoundError) {
       notFound();
@@ -122,7 +63,6 @@ export default async function RenderedPage({params, searchParams}) {
   };
 
   let globalComponentsResult = page?.global_sections || [];
-  console.log("globalComponentsResult", globalComponentsResult);
 
   // 获取当前页面 slug 字符串
   const currentSlug = slug.length > 0 ? `/${slug.join("/")}` : "/";

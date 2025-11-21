@@ -63,10 +63,7 @@ export function processGlobalHeaderComponent($, $nav, navigationData, currentSlu
     // 注入菜单
     $menuContainer.html(menuHtml);
 
-    console.log(`[X-Nav] 菜单已成功注入，包含 ${menuData.items?.length || 0} 个顶级菜单项`);
-    logWarn('[X-Nav] 菜单已成功注入');
   } catch (error) {
     logWarn('[X-Nav] 处理失败:', error);
-    console.error('[X-Nav] 详细错误:', error);
   }
 }

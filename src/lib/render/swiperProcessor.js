@@ -379,7 +379,6 @@ function generateProductDetailSwiperScript({ mainSelector, thumbSelector, isAbov
         });
         thumbEl.__swiper_initialized = true;
         thumbEl.__swiper_instance = thumbsSwiper;
-        console.log('✅ 产品详情缩略图轮播初始化成功');
       } catch (error) {
         console.error('❌ 产品详情缩略图轮播初始化失败:', error);
       }
@@ -404,7 +403,6 @@ function generateProductDetailSwiperScript({ mainSelector, thumbSelector, isAbov
       const mainSwiper = new Swiper(mainEl, mainConfig);
       mainEl.__swiper_initialized = true;
       mainEl.__swiper_instance = mainSwiper;
-      console.log('✅ 产品详情主轮播初始化成功 (thumbs 模式)');
     } catch (error) {
       console.error('❌ 产品详情主轮播初始化失败:', error);
     }
@@ -518,7 +516,6 @@ function generateSingleSwiperScript(selector, config, isAboveFold) {
       const swiperInstance = new Swiper(swiperEl, config);
       swiperEl.__swiper_initialized = true;
       swiperEl.__swiper_instance = swiperInstance;
-      console.log('✅ Swiper initialized:', '${selector}');
     } catch (error) {
       console.error('❌ Swiper initialization failed:', error);
     }
