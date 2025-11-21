@@ -269,9 +269,6 @@
 
 .pd-related-content {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 /* 骨架屏样式 */

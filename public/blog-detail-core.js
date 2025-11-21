@@ -26,8 +26,17 @@
     init() {
       this.initGallerySwiper();
 
-      // 仅在有 blogId 时加载相关博客
-      if (this.blogId) {
+      // 检查相关博客是否已在服务端渲染
+      const relatedContainer = this.container.querySelector('.bd-related');
+      const isServerRendered = relatedContainer?.dataset.serverRendered === "true";
+      const needsClientFallback = relatedContainer?.dataset.clientFallback === "true";
+
+      if (isServerRendered) {
+        // 服务端已渲染，无需客户端加载
+        console.log("✅ 相关博客已由服务端渲染");
+      } else if (needsClientFallback && this.blogId) {
+        // 服务端渲染失败，降级为客户端加载
+        console.log("⚠️ 相关博客降级为客户端加载");
         this.loadRelatedBlogs();
       }
     }

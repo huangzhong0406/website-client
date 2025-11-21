@@ -32,7 +32,7 @@ import {processSwipers} from "./render/swiperProcessor.js";
  * @param {boolean} options.skipSanitization - 是否跳过 HTML 清理
  * @returns {Object} 处理后的内容
  */
-export function prepareGrapesContent({
+export async function prepareGrapesContent({
   html = "",
   css = "",
   assets = [],
@@ -82,22 +82,25 @@ export function prepareGrapesContent({
   const preloadResources = [];
 
   // 组合css
-  globalComponents.forEach((com) => {
-    let comCss = com.json_data?.css || "";
-    if (com.type != "header") {
-      css += comCss;
-    }
-  });
+  if (globalComponents && Array.isArray(globalComponents)) {
+    globalComponents.forEach((com) => {
+      let comCss = com.json_data?.css || "";
+      if (com.type != "header") {
+        css += comCss;
+      }
+    });
+  }
 
   // 分离页面 CSS
   let {criticalCss: pageCriticalCss, deferredCss} = splitCss(css);
 
-  // 单次遍历处理所有动态内容
-  processDynamicContent($, {
+  // 单次遍历处理所有动态内容（现在支持异步）
+  await processDynamicContent($, {
     globalComponents,
     productListPageData,
     blogListPageData,
     productDetailData,
+    blogDetailData,
     currentSlug,
     currentParams,
     currentCategoryId,
@@ -108,15 +111,19 @@ export function prepareGrapesContent({
   const body = $("body");
   let normalizedHtml = body.length > 0 ? body.html() || "" : $.root().html() || "";
 
+
   let criticalCss = pageCriticalCss;
-  let headerCss = globalComponents.find((com) => com.type == "header")?.json_data?.css || "";
+  let headerCss = "";
+  if (globalComponents && Array.isArray(globalComponents)) {
+    headerCss = globalComponents.find((com) => com.type == "header")?.json_data?.css || "";
+  }
   criticalCss = headerCss + criticalCss;
 
   // 处理 Swiper 组件
   const swiperResult = processSwipers(normalizedHtml);
   normalizedHtml = swiperResult.html;
 
-  return {
+  const result = {
     html: normalizedHtml,
     criticalCss,
     deferredCss,
@@ -126,6 +133,8 @@ export function prepareGrapesContent({
     swiperCount: swiperResult.swiperCount,
     hasAboveFoldSwiper: swiperResult.hasAboveFoldSwiper
   };
+
+  return result;
 }
 
 /**
@@ -134,7 +143,7 @@ export function prepareGrapesContent({
  * @param {CheerioAPI} $ - Cheerio 实例
  * @param {Object} options - 处理选项
  */
-function processDynamicContent(
+async function processDynamicContent(
   $,
   {
     globalComponents,
@@ -156,35 +165,36 @@ function processDynamicContent(
 
   // 2. 单次遍历处理所有需要处理的元素
   let lcpAssigned = false;
+  const asyncTasks = []; // 收集异步任务
 
   // 使用单次遍历处理所有元素
   $("*").each((_index, element) => {
     const $elem = $(element);
     const componentType = $elem.attr("data-component-type");
 
-    // 处理产品列表页组件
+    // 处理产品列表页组件（同步）
     if (componentType === "product-list-page" && productListPageData) {
       processProductListPageComponent($, $elem, productListPageData, currentSlug, currentParams, currentCategoryId);
     }
 
-    // 处理产品列表详情组件
+    // 处理产品列表详情组件（同步）
     else if (componentType === "product-list-detail" && productListPageData) {
       processProductListDetailComponent($, $elem, productListPageData, currentParams);
     }
 
-    // 处理博客列表页组件
+    // 处理博客列表页组件（同步）
     else if (componentType === "blog-list-page" && blogListPageData) {
       processBlogListPageComponent($, $elem, blogListPageData, currentSlug, currentParams, currentCategoryId);
     }
 
-    // 处理产品详情组件
+    // 处理产品详情组件（异步 - 收集任务）
     else if (componentType === "product-detail" && productDetailData) {
-      processProductDetailComponent($, $elem, productDetailData);
+      asyncTasks.push(processProductDetailComponent($, $elem, productDetailData));
     }
 
-    // 处理博客详情组件
+    // 处理博客详情组件（异步 - 收集任务）
     else if (componentType === "blog-detail" && blogDetailData) {
-      processBlogDetailComponent($, $elem, blogDetailData);
+      asyncTasks.push(processBlogDetailComponent($, $elem, blogDetailData));
     }
 
     // 处理 Global-Header 导航组件（备用逻辑，主要逻辑已在 injectGlobalComponents 中处理）
@@ -224,4 +234,9 @@ function processDynamicContent(
       }
     }
   });
+
+  // 3. 等待所有异步任务完成
+  if (asyncTasks.length > 0) {
+    await Promise.all(asyncTasks);
+  }
 }

@@ -13,22 +13,14 @@ export async function GET(request) {
   try {
     // 解析查询参数
     const {searchParams} = new URL(request.url);
-    const blogId = searchParams.get("id");
-    const limit = searchParams.get("limit") || "3"; // 默认返回 3 条
+    const blogId = searchParams.get("blog_id");
+
+    console.log("[API代理] 相关博客请求:", {blogId});
 
     // 验证必需参数
     if (!blogId) {
       return NextResponse.json(
-        {error: "缺少必需参数: id"},
-        {status: 400}
-      );
-    }
-
-    // 验证 limit 参数有效性
-    const limitNum = parseInt(limit, 10);
-    if (isNaN(limitNum) || limitNum < 1 || limitNum > 20) {
-      return NextResponse.json(
-        {error: "limit 参数必须是 1-20 之间的整数"},
+        {error: "缺少必需参数: blog_id"},
         {status: 400}
       );
     }
@@ -36,10 +28,9 @@ export async function GET(request) {
     // 提取租户信息（从请求 headers 中识别租户）
     const tenant = await getTenantContext();
 
-    // 构造后端 API 地址
+    // 构造后端 API 地址（后端会返回所有相关博客，前端自行控制显示数量）
     const apiUrl = buildApiUrl("/api/module/blogs/related", {
-      id: blogId,
-      limit: limitNum
+      blog_id: blogId
     });
 
     // 使用 apiFetch 发起请求，自动添加租户标识和 API 认证

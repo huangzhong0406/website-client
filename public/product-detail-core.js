@@ -29,11 +29,19 @@
     init() {
       this.initGallerySwiper();
       this.initDescriptionTabs();
-      
-      // console.log("✅ 产品详情组件已初始化", this.productId);
 
-      // 仅在有 productId 时加载相关产品
-      if (this.productId) {
+      // 检查相关产品是否已在服务端渲染
+      const relatedContainer = this.container.querySelector(SELECTORS.relatedContent);
+      const isServerRendered = relatedContainer?.dataset.serverRendered === "true";
+      const needsClientFallback = relatedContainer?.dataset.clientFallback === "true";
+
+      if (isServerRendered) {
+        // 服务端已渲染，只需初始化Swiper
+        console.log("✅ 相关产品已由服务端渲染");
+        this.initRelatedSwiper();
+      } else if (needsClientFallback && this.productId) {
+        // 服务端渲染失败，降级为客户端加载
+        console.log("⚠️ 相关产品降级为客户端加载");
         this.loadRelatedProducts();
       }
     }
