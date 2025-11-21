@@ -65,7 +65,7 @@
       if (!container) return;
 
       try {
-        const response = await fetch(`/api/module/blogs/related?id=${this.blogId}&limit=${this.config.relatedBlogsCount || 3}`);
+        const response = await fetch(`/api/module/blogs/related?blog_id=${this.blogId}`);
 
         if (!response.ok) {
           throw new Error('Failed to load related blogs');

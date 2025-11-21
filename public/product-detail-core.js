@@ -29,6 +29,8 @@
     init() {
       this.initGallerySwiper();
       this.initDescriptionTabs();
+      
+      // console.log("✅ 产品详情组件已初始化", this.productId);
 
       // 仅在有 productId 时加载相关产品
       if (this.productId) {
@@ -103,13 +105,14 @@
         const response = await fetch(`/api/module/products/related?product_id=${this.productId}`);
         const data = await response.json();
 
-        if (!data.products || !data.products.length) {
+        if (data.code != 200 || !data.data?.length) {
+          console.log(1);
           container.innerHTML = '<p>No related products</p>';
           return;
         }
 
         // 生成相关产品 HTML
-        const html = this.generateRelatedProductsHtml(data.products);
+        const html = this.generateRelatedProductsHtml(data.data);
         container.innerHTML = html;
 
         // 初始化轮播
@@ -147,15 +150,19 @@
       return `
         <div class="swiper pd-related-swiper">
           <div class="swiper-wrapper">
-            ${products.map(product => `
+            ${products
+              .map(
+                (product) => `
               <div class="swiper-slide">
                 <div class="related-product-card">
-                  <img src="${product.image}" alt="${product.title}" loading="lazy">
-                  <h3>${product.title}</h3>
+                  <img src="${product.primary_image}" alt="${product.name}" loading="lazy">
+                  <h3>${product.name}</h3>
                   <a href="${product.path}" class="view-more-btn">Learn More</a>
                 </div>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
           <div class="swiper-button-next"></div>
           <div class="swiper-button-prev"></div>
