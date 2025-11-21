@@ -57,9 +57,10 @@ export function processSwipers(html) {
   const $ = cheerio.load(html);
   const swiperRoots = $(`.${SWIPER_CONFIG.CLASS_NAMES.root}`);
 
-  // 同时查找产品详情轮播（.pd-gallery-main）
+  // 同时查找产品详情轮播（.pd-gallery-main）和相关产品轮播（.pd-related-swiper）
   const productDetailSwipers = $('.swiper.pd-gallery-main');
-  const totalSwipers = swiperRoots.length + productDetailSwipers.length;
+  const relatedProductSwipers = $('.swiper.pd-related-swiper');
+  const totalSwipers = swiperRoots.length + productDetailSwipers.length + relatedProductSwipers.length;
 
   if (totalSwipers === 0) {
     return {
@@ -178,6 +179,45 @@ export function processSwipers(html) {
       hasThumb: $thumbsGallery.length > 0,
       mainSelector: `.pd-gallery-main[data-swiper-index="${globalIndex}"]`,
       thumbSelector: $thumbsGallery.length > 0 ? `.pd-gallery-thumbs[data-swiper-index="${globalIndex}-thumbs"]` : null
+    });
+
+    globalIndex++;
+  });
+
+  // 处理相关产品轮播（固定响应式配置）
+  relatedProductSwipers.each((_, relatedSwiperEl) => {
+    const $relatedSwiper = $(relatedSwiperEl);
+    const $productDetail = $relatedSwiper.closest('[data-component-type="product-detail"]');
+
+    if ($productDetail.length === 0) {
+      console.warn('相关产品轮播缺少父容器 [data-component-type="product-detail"]');
+      return;
+    }
+
+    // 相关产品轮播通常不在首屏
+    const isAboveFold = false;
+
+    // 为轮播添加标识
+    $relatedSwiper.attr('data-swiper-index', globalIndex);
+    $relatedSwiper.attr('data-swiper-priority', 'low');
+
+    // 非首屏图片懒加载
+    lazyLoadSlides($, $relatedSwiper);
+
+    // 构建相关产品轮播配置（固定响应式配置）
+    swiperConfigs.push({
+      index: globalIndex,
+      config: {
+        slidesPerView: 1,      // 移动端
+        spaceBetween: 20,
+        breakpoints: {
+          640: { slidesPerView: 2 },   // 平板端
+          1024: { slidesPerView: 4 }   // 桌面端
+        }
+      },
+      isAboveFold: false,
+      type: 'related-products',
+      selector: `.pd-related-swiper[data-swiper-index="${globalIndex}"]`
     });
 
     globalIndex++;
@@ -324,6 +364,9 @@ function generateInitScripts(swiperConfigs) {
     if (type === 'product-detail') {
       // 产品详情轮播使用 thumbs 模式
       scriptContent = generateProductDetailSwiperScript(swiperConfig);
+    } else if (type === 'related-products') {
+      // 相关产品轮播（固定响应式配置）
+      scriptContent = generateSingleSwiperScript(swiperConfig.selector, config, isAboveFold);
     } else {
       // 标准轮播
       scriptContent = generateSingleSwiperScript(swiperConfig.selector, config, isAboveFold);
@@ -465,6 +508,10 @@ function generateSingleSwiperScript(selector, config, isAboveFold) {
         delay: config.delay,
         disableOnInteraction: false
       }
+    }),
+    // 如果配置中包含 breakpoints，添加响应式配置
+    ...(config.breakpoints && {
+      breakpoints: config.breakpoints
     })
   };
 

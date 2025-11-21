@@ -51,6 +51,7 @@ export async function processProductDetailComponent($, $elem, productDetailData)
   // 5. 服务端渲染相关产品（优先）或生成骨架屏（降级）
   const $relatedContent = $elem.find(".pd-related-content");
   if ($relatedContent.length > 0) {
+    // relatedProductsCount 控制展示的总数量
     const relatedCount = config.relatedProductsCount || 6;
 
     try {
@@ -60,10 +61,8 @@ export async function processProductDetailComponent($, $elem, productDetailData)
       if (relatedProducts && relatedProducts.length > 0) {
         // 成功获取数据，渲染完整的相关产品HTML
         const displayProducts = relatedProducts.slice(0, relatedCount);
-        // const relatedHtml = generateRelatedProductsHtml(displayProducts);
-        // $relatedContent.html(relatedHtml);
-        const skeletonHtml = generateRelatedProductsSkeleton(relatedCount);
-        $relatedContent.html(skeletonHtml);
+        const relatedHtml = generateRelatedProductsHtml(displayProducts);
+        $relatedContent.html(relatedHtml);
         $relatedContent.attr("data-server-rendered", "true"); // 标记为服务端渲染
         console.log(`✅ 服务端成功渲染 ${displayProducts.length} 个相关产品`);
       } else {
@@ -118,7 +117,7 @@ function generateRelatedProductsHtml(products) {
  * @returns {string} 骨架屏HTML
  */
 function generateRelatedProductsSkeleton(count) {
-  const skeletonCount = Math.min(count || 3, 6);
+  const skeletonCount = Math.min(count || 3, 12);
   const skeletonCards = Array(skeletonCount)
     .fill(0)
     .map(

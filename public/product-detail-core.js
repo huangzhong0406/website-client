@@ -36,9 +36,8 @@
       const needsClientFallback = relatedContainer?.dataset.clientFallback === "true";
 
       if (isServerRendered) {
-        // 服务端已渲染，只需初始化Swiper
-        console.log("✅ 相关产品已由服务端渲染");
-        this.initRelatedSwiper();
+        // 服务端已渲染，轮播初始化由 swiperProcessor.js 负责
+        console.log("✅ 相关产品已由服务端渲染，轮播由 swiperProcessor.js 初始化");
       } else if (needsClientFallback && this.productId) {
         // 服务端渲染失败，降级为客户端加载
         console.log("⚠️ 相关产品降级为客户端加载");
@@ -119,11 +118,16 @@
           return;
         }
 
+        // 限制显示数量
+        const displayCount = this.config.relatedProductsCount || 6;
+        const displayProducts = data.data.slice(0, displayCount);
+
         // 生成相关产品 HTML
-        const html = this.generateRelatedProductsHtml(data.data);
+        const html = this.generateRelatedProductsHtml(displayProducts);
         container.innerHTML = html;
 
-        // 初始化轮播
+        // 轮播初始化由 swiperProcessor.js 负责
+        // 如果是客户端渲染，需要手动触发初始化（因为 swiperProcessor 在服务端已运行）
         this.initRelatedSwiper();
       } catch (error) {
         console.error('Failed to load related products:', error);
@@ -182,7 +186,11 @@
       const swiperEl = this.container.querySelector('.pd-related-swiper');
       if (!swiperEl || !window.Swiper) return;
 
-      new Swiper(swiperEl, {
+      // 检查是否已初始化（避免重复初始化）
+      if (swiperEl.__swiper_initialized) return;
+
+      // 固定的响应式配置：移动端1个，平板2个，桌面4个
+      const swiperInstance = new Swiper(swiperEl, {
         slidesPerView: 1,
         spaceBetween: 20,
         navigation: {
@@ -191,9 +199,13 @@
         },
         breakpoints: {
           640: { slidesPerView: 2 },
-          1024: { slidesPerView: 3 }
+          1024: { slidesPerView: 4 }
         }
       });
+
+      // 标记为已初始化
+      swiperEl.__swiper_initialized = true;
+      swiperEl.__swiper_instance = swiperInstance;
     }
   }
 
